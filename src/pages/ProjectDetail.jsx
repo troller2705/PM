@@ -1,36 +1,36 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from 'utils';
-import { base44 } from 'api/base44Client';
+import { createPageUrl } from '../utils';
+import { base44 } from '../api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageHeader from 'components/common/PageHeader';
-import StatCard from 'components/common/StatCard';
-import StatusBadge from 'components/common/StatusBadge';
-import Avatar from 'components/common/Avatar';
-import EmptyState from 'components/common/EmptyState';
-import { Button } from "components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
-import { Badge } from "components/ui/badge";
-import { Progress } from "components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "components/ui/tabs";
+import PageHeader from '../components/common/PageHeader';
+import StatCard from '../components/common/StatCard';
+import StatusBadge from '../components/common/StatusBadge';
+import Avatar from '../components/common/Avatar';
+import EmptyState from '../components/common/EmptyState';
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Progress } from "../components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "components/ui/dialog";
-import { Input } from "components/ui/input";
-import { Label } from "components/ui/label";
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "components/ui/select";
-import { Skeleton } from "components/ui/skeleton";
-import { ScrollArea } from "components/ui/scroll-area";
+} from "../components/ui/select";
+import { Skeleton } from "../components/ui/skeleton";
+import { ScrollArea } from "../components/ui/scroll-area";
 import {
   ArrowLeft,
   ListTodo,
@@ -52,9 +52,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "components/ui/dropdown-menu";
+} from "../components/ui/dropdown-menu";
 import { format } from 'date-fns';
-import { cn } from "lib/utils";
+import { cn } from "../lib/utils";
 
 export default function ProjectDetail() {
   const urlParams = new URLSearchParams(window.location.search);

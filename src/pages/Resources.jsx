@@ -1,25 +1,25 @@
 import React, { useState } from 'react';
-import { base44 } from 'api/base44Client';
+import { base44 } from '../api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageHeader from 'components/common/PageHeader';
-import StatCard from 'components/common/StatCard';
-import Avatar from 'components/common/Avatar';
-import SearchInput from 'components/common/SearchInput';
-import WorkloadHeatmap from 'components/resources/WorkloadHeatmap';
-import SkillMatrix from 'components/resources/SkillMatrix';
-import AvailabilityTimeline from 'components/resources/AvailabilityTimeline';
-import ForecastPanel from 'components/resources/ForecastPanel';
-import BottleneckAlert from 'components/resources/BottleneckAlert';
-import ResourceProfileModal from 'components/resources/ResourceProfileModal';
-import { Button } from 'components/ui/button';
-import { Card, CardContent } from 'components/ui/card';
-import { Badge } from 'components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from 'components/ui/tabs';
-import { Skeleton } from 'components/ui/skeleton';
+import PageHeader from '../components/common/PageHeader';
+import StatCard from '../components/common/StatCard';
+import Avatar from '../components/common/Avatar';
+import SearchInput from '../components/common/SearchInput';
+import WorkloadHeatmap from '../components/resources/WorkloadHeatmap';
+import SkillMatrix from '../components/resources/SkillMatrix';
+import AvailabilityTimeline from '../components/resources/AvailabilityTimeline';
+import ForecastPanel from '../components/resources/ForecastPanel';
+import BottleneckAlert from '../components/resources/BottleneckAlert';
+import ResourceProfileModal from '../components/resources/ResourceProfileModal';
+import { Button } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Skeleton } from '../components/ui/skeleton';
 import {
   Users, Activity, LayoutGrid, Layers, TrendingUp, AlertTriangle, Pencil
 } from 'lucide-react';
-import { cn } from 'lib/utils';
+import { cn } from '../lib/utils';
 
 const STATUS_COLORS = {
   available:           'bg-emerald-100 text-emerald-700',

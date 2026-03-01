@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from 'api/base44Client';
+import { base44 } from '../api/base44Client';
 import { useMutation } from '@tanstack/react-query';
-import PageHeader from 'components/common/PageHeader';
-import Avatar from 'components/common/Avatar';
-import { Button } from "components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "components/ui/card";
-import { Input } from "components/ui/input";
-import { Label } from "components/ui/label";
-import { Switch } from "components/ui/switch";
-import { Skeleton } from "components/ui/skeleton";
+import PageHeader from '../components/common/PageHeader';
+import Avatar from '../components/common/Avatar';
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Switch } from "../components/ui/switch";
+import { Skeleton } from "../components/ui/skeleton";
 import { toast } from "sonner";
 import {
   User,

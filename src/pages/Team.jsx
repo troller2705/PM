@@ -1,34 +1,34 @@
 import React, { useState } from 'react';
-import { base44 } from 'api/base44Client';
+import { base44 } from '../api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageHeader from 'components/common/PageHeader';
-import StatusBadge from 'components/common/StatusBadge';
-import SearchInput from 'components/common/SearchInput';
-import EmptyState from 'components/common/EmptyState';
-import Avatar from 'components/common/Avatar';
-import DataTable from 'components/common/DataTable';
-import { Button } from "components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
-import { Badge } from "components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "components/ui/tabs";
+import PageHeader from '../components/common/PageHeader';
+import StatusBadge from '../components/common/StatusBadge';
+import SearchInput from '../components/common/SearchInput';
+import EmptyState from '../components/common/EmptyState';
+import Avatar from '../components/common/Avatar';
+import DataTable from '../components/common/DataTable';
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "components/ui/dialog";
-import { Input } from "components/ui/input";
-import { Label } from "components/ui/label";
-import { Textarea } from "components/ui/textarea";
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "components/ui/select";
-import { Skeleton } from "components/ui/skeleton";
+} from "../components/ui/select";
+import { Skeleton } from "../components/ui/skeleton";
 import {
   Plus,
   Users,
@@ -45,8 +45,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "components/ui/dropdown-menu";
-import { cn } from "lib/utils";
+} from "../components/ui/dropdown-menu";
+import { cn } from "../lib/utils";
 
 export default function Team() {
   const [search, setSearch] = useState('');

@@ -1,34 +1,34 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from 'utils';
-import { base44 } from 'api/base44Client';
+import { createPageUrl } from '../utils';
+import { base44 } from '../api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageHeader from 'components/common/PageHeader';
-import StatusBadge from 'components/common/StatusBadge';
-import SearchInput from 'components/common/SearchInput';
-import EmptyState from 'components/common/EmptyState';
-import Avatar from 'components/common/Avatar';
-import { Button } from "components/ui/button";
-import { Card, CardContent } from "components/ui/card";
-import { Progress } from "components/ui/progress";
+import PageHeader from '../components/common/PageHeader';
+import StatusBadge from '../components/common/StatusBadge';
+import SearchInput from '../components/common/SearchInput';
+import EmptyState from '../components/common/EmptyState';
+import Avatar from '../components/common/Avatar';
+import { Button } from "../components/ui/button";
+import { Card, CardContent } from "../components/ui/card";
+import { Progress } from "../components/ui/progress";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "components/ui/dialog";
-import { Input } from "components/ui/input";
-import { Label } from "components/ui/label";
-import { Textarea } from "components/ui/textarea";
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "components/ui/select";
-import { Skeleton } from "components/ui/skeleton";
+} from "../components/ui/select";
+import { Skeleton } from "../components/ui/skeleton";
 import {
   Plus,
   FolderKanban,
@@ -45,7 +45,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "components/ui/dropdown-menu";
+} from "../components/ui/dropdown-menu";
 import { format } from 'date-fns';
 
 const PROJECT_STATUSES = [

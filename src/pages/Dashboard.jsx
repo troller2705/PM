@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from 'utils';
-import { base44 } from 'api/base44Client';
+import { createPageUrl } from '../utils';
+import { base44 } from '../api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import PageHeader from 'components/common/PageHeader';
-import StatCard from 'components/common/StatCard';
-import StatusBadge from 'components/common/StatusBadge';
-import Avatar from 'components/common/Avatar';
-import { Card, CardContent, CardHeader, CardTitle } from "components/ui/card";
-import { Button } from "components/ui/button";
-import { Progress } from "components/ui/progress";
-import { Skeleton } from "components/ui/skeleton";
+import PageHeader from '../components/common/PageHeader';
+import StatCard from '../components/common/StatCard';
+import StatusBadge from '../components/common/StatusBadge';
+import Avatar from '../components/common/Avatar';
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Progress } from "../components/ui/progress";
+import { Skeleton } from "../components/ui/skeleton";
 import {
   FolderKanban,
   ListTodo,

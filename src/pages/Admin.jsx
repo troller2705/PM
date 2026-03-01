@@ -1,35 +1,35 @@
 import React, { useState } from 'react';
-import { base44 } from 'api/base44Client';
+import { base44 } from '../api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageHeader from 'components/common/PageHeader';
-import StatusBadge from 'components/common/StatusBadge';
-import SearchInput from 'components/common/SearchInput';
-import DataTable from 'components/common/DataTable';
-import Avatar from 'components/common/Avatar';
-import { Button } from "components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "components/ui/card";
-import { Badge } from "components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "components/ui/tabs";
+import PageHeader from '../components/common/PageHeader';
+import StatusBadge from '../components/common/StatusBadge';
+import SearchInput from '../components/common/SearchInput';
+import DataTable from '../components/common/DataTable';
+import Avatar from '../components/common/Avatar';
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "components/ui/dialog";
-import { Input } from "components/ui/input";
-import { Label } from "components/ui/label";
-import { Textarea } from "components/ui/textarea";
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Textarea } from "../components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "components/ui/select";
-import { Switch } from "components/ui/switch";
-import { Skeleton } from "components/ui/skeleton";
-import { ScrollArea } from "components/ui/scroll-area";
+} from "../components/ui/select";
+import { Switch } from "../components/ui/switch";
+import { Skeleton } from "../components/ui/skeleton";
+import { ScrollArea } from "../components/ui/scroll-area";
 import {
   Plus,
   Settings,
@@ -50,9 +50,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "components/ui/dropdown-menu";
+} from "../components/ui/dropdown-menu";
 import { format } from 'date-fns';
-import { cn } from "lib/utils";
+import { cn } from "../lib/utils";
 
 const SETTING_CATEGORIES = [
   { id: 'general', name: 'General', icon: Settings },

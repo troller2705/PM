@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from 'utils';
-import { base44 } from 'api/base44Client';
-import { cn } from "lib/utils";
-import { Button } from "components/ui/button";
-import { ScrollArea } from "components/ui/scroll-area";
+import { createPageUrl } from './utils';
+import { base44 } from './api/base44Client';
+import { cn } from "./lib/utils";
+import { Button } from "./components/ui/button";
+import { ScrollArea } from "./components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "components/ui/dropdown-menu";
-import Avatar from 'components/common/Avatar';
+} from "./components/ui/dropdown-menu";
+import Avatar from './components/common/Avatar';
 import {
   LayoutDashboard,
   FolderKanban,

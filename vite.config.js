@@ -5,6 +5,10 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   logLevel: 'error', // Suppress warnings, only show errors
+  server: {
+    open: true, // This will automatically open the browser on start
+    port: 5173  // You can specify a port if needed
+  },
   plugins: [
     base44({
       // Support for legacy code that imports the base44 SDK with @/integrations, @/entities, etc.
