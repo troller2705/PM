@@ -1,0 +1,41 @@
+{
+  "name": "Department",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Department name"
+    },
+    "code": {
+      "type": "string",
+      "description": "Department code (e.g., DEV, ART, QA)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "parent_department_id": {
+      "type": "string",
+      "description": "Parent department for hierarchy"
+    },
+    "manager_id": {
+      "type": "string",
+      "description": "Department manager user ID"
+    },
+    "budget_allocation": {
+      "type": "number",
+      "description": "Annual budget allocation"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "name",
+    "code"
+  ]
+}

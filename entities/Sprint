@@ -1,0 +1,45 @@
+{
+  "name": "Sprint",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "goal": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "active",
+        "completed",
+        "cancelled"
+      ],
+      "default": "planned"
+    },
+    "velocity": {
+      "type": "number",
+      "description": "Story points completed"
+    },
+    "capacity": {
+      "type": "number",
+      "description": "Total story points planned"
+    }
+  },
+  "required": [
+    "name",
+    "project_id"
+  ]
+}

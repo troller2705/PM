@@ -1,0 +1,35 @@
+{
+  "name": "SystemSettings",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "general",
+        "ldap",
+        "git",
+        "budget",
+        "notifications",
+        "security"
+      ],
+      "default": "general"
+    },
+    "description": {
+      "type": "string"
+    },
+    "is_secret": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "key",
+    "value"
+  ]
+}

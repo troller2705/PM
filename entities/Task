@@ -1,0 +1,121 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "sprint_id": {
+      "type": "string"
+    },
+    "milestone_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "backlog",
+        "todo",
+        "in_progress",
+        "review",
+        "testing",
+        "done",
+        "blocked"
+      ],
+      "default": "backlog"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "default": "medium"
+    },
+    "task_type": {
+      "type": "string",
+      "enum": [
+        "feature",
+        "bug",
+        "improvement",
+        "task",
+        "epic",
+        "story",
+        "spike"
+      ],
+      "default": "task"
+    },
+    "assignee_id": {
+      "type": "string"
+    },
+    "reporter_id": {
+      "type": "string"
+    },
+    "estimated_hours": {
+      "type": "number"
+    },
+    "logged_hours": {
+      "type": "number",
+      "default": 0
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "parent_task_id": {
+      "type": "string",
+      "description": "Parent task for subtasks"
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "git_branch": {
+      "type": "string"
+    },
+    "git_commits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sha": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "order": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "title",
+    "project_id"
+  ]
+}

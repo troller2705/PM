@@ -1,0 +1,45 @@
+{
+  "name": "ProjectAccess",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "group_id": {
+      "type": "string"
+    },
+    "role_id": {
+      "type": "string"
+    },
+    "custom_permissions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "access_level": {
+      "type": "string",
+      "enum": [
+        "none",
+        "view",
+        "contribute",
+        "manage",
+        "admin"
+      ],
+      "default": "view"
+    },
+    "granted_by": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "project_id"
+  ]
+}

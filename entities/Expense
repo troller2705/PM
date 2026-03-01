@@ -1,0 +1,78 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "budget_id": {
+      "type": "string"
+    },
+    "category_id": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "department_id": {
+      "type": "string"
+    },
+    "vendor": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "paid",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "receipt_url": {
+      "type": "string"
+    },
+    "submitted_by": {
+      "type": "string"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "credit_card",
+        "bank_transfer",
+        "cash",
+        "invoice",
+        "other"
+      ],
+      "default": "credit_card"
+    },
+    "reference_number": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "description",
+    "amount"
+  ]
+}
