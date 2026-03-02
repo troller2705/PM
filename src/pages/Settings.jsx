@@ -26,7 +26,7 @@ export default function Settings() {
     notification_tasks: true,
     notification_mentions: true,
     notification_budget: false,
-    theme: 'light',
+    theme: 'dark',
   });
 
   useEffect(() => {
