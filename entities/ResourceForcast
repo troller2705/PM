@@ -5,6 +5,17 @@
     "project_id": {
       "type": "string"
     },
+    "milestone_id": {
+      "type": "string",
+      "description": "Linked project milestone/phase"
+    },
+    "task_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Specific tasks this forecast covers"
+    },
     "title": {
       "type": "string"
     },
@@ -57,6 +68,10 @@
     },
     "notes": {
       "type": "string"
+    },
+    "ai_generated": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '../api/base44Client';
+import { db } from '../api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '../components/common/PageHeader';
 import StatusBadge from '../components/common/StatusBadge';
@@ -81,37 +81,37 @@ export default function AccessControl() {
 
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ['roles'],
-    queryFn: () => base44.entities.Role.list(),
+    queryFn: () => db.roles.list(),
   });
 
   const { data: permissions = [], isLoading: permissionsLoading } = useQuery({
     queryKey: ['permissions'],
-    queryFn: () => base44.entities.Permission.list(),
+    queryFn: () => db.permissions.list(),
   });
 
   const { data: projectAccess = [], isLoading: accessLoading } = useQuery({
     queryKey: ['projectAccess'],
-    queryFn: () => base44.entities.ProjectAccess.list('-created_date', 200),
+    queryFn: () => db.projectAccess.list('-created_date', 200),
   });
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => db.projects.list(),
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => db.users.list(),
   });
 
   const { data: groups = [] } = useQuery({
     queryKey: ['ldapGroups'],
-    queryFn: () => base44.entities.LDAPGroup.list(),
+    queryFn: () => db.ldapGroups.list(),
   });
 
   // Role mutations
   const createRoleMutation = useMutation({
-    mutationFn: (data) => base44.entities.Role.create(data),
+    mutationFn: (data) => db.roles.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       setRoleDialog(false);
@@ -121,7 +121,7 @@ export default function AccessControl() {
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Role.update(id, data),
+    mutationFn: ({ id, data }) => db.roles.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       setRoleDialog(false);
@@ -131,13 +131,13 @@ export default function AccessControl() {
   });
 
   const deleteRoleMutation = useMutation({
-    mutationFn: (id) => base44.entities.Role.delete(id),
+    mutationFn: (id) => db.roles.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['roles'] }),
   });
 
   // Permission mutations
   const createPermissionMutation = useMutation({
-    mutationFn: (data) => base44.entities.Permission.create(data),
+    mutationFn: (data) => db.permissions.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
       setPermissionDialog(false);
@@ -146,7 +146,7 @@ export default function AccessControl() {
   });
 
   const updatePermissionMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Permission.update(id, data),
+    mutationFn: ({ id, data }) => db.permissions.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permissions'] });
       setPermissionDialog(false);
@@ -155,13 +155,13 @@ export default function AccessControl() {
   });
 
   const deletePermissionMutation = useMutation({
-    mutationFn: (id) => base44.entities.Permission.delete(id),
+    mutationFn: (id) => db.permissions.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['permissions'] }),
   });
 
   // Access mutations
   const createAccessMutation = useMutation({
-    mutationFn: (data) => base44.entities.ProjectAccess.create(data),
+    mutationFn: (data) => db.projectAccess.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectAccess'] });
       setAccessDialog(false);
@@ -170,7 +170,7 @@ export default function AccessControl() {
   });
 
   const updateAccessMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.ProjectAccess.update(id, data),
+    mutationFn: ({ id, data }) => db.projectAccess.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectAccess'] });
       setAccessDialog(false);
@@ -179,7 +179,7 @@ export default function AccessControl() {
   });
 
   const deleteAccessMutation = useMutation({
-    mutationFn: (id) => base44.entities.ProjectAccess.delete(id),
+    mutationFn: (id) => db.projectAccess.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['projectAccess'] }),
   });
 
@@ -191,14 +191,18 @@ export default function AccessControl() {
   const handleRoleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    
+    const parentRoleId = formData.get('parent_role_id');
+    
     const data = {
       name: formData.get('name'),
       code: formData.get('code'),
       description: formData.get('description'),
       permission_ids: selectedPermissions,
       hierarchy_level: Number(formData.get('hierarchy_level')) || 0,
+      parent_role_id: parentRoleId === 'none' ? null : parentRoleId,
     };
-
+  
     if (editingRole) {
       updateRoleMutation.mutate({ id: editingRole.id, data });
     } else {
@@ -509,10 +513,32 @@ export default function AccessControl() {
                 <Input id="code" name="code" required defaultValue={editingRole?.code} placeholder="developer" />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" name="description" defaultValue={editingRole?.description} rows={2} />
+              <Label htmlFor="hierarchy_level">Hierarchy Level</Label>
+              <Input id="hierarchy_level" name="hierarchy_level" type="number" defaultValue={editingRole?.hierarchy_level || 0} />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="parent_role_id">Inherit From (Parent Role)</Label>
+              <Select name="parent_role_id" defaultValue={editingRole?.parent_role_id || 'none'}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select parent role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None (Top Level)</SelectItem>
+                  {roles
+                    .filter(r => r.id !== editingRole?.id) // Prevent self-inheritance
+                    .map(r => (
+                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea id="description" name="description" defaultValue={editingRole?.description} rows={2} />
+          </div>
             <div className="space-y-2">
               <Label htmlFor="hierarchy_level">Hierarchy Level</Label>
               <Input id="hierarchy_level" name="hierarchy_level" type="number" defaultValue={editingRole?.hierarchy_level || 0} />

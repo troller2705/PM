@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { base44 } from './api/base44Client';
+import { db } from './api/apiClient';
 import { cn } from "./lib/utils";
 import { Button } from "./components/ui/button";
 import { ScrollArea } from "./components/ui/scroll-area";
@@ -51,7 +51,7 @@ export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    db.auth.me().then(setUser).catch(() => {});
   }, []);
 
   const isAdmin = user?.role === 'admin';
@@ -68,7 +68,7 @@ export default function Layout({ children, currentPageName }) {
         </div>
         {!collapsed && (
           <span className="text-lg font-semibold text-white tracking-tight">
-            GameStudio
+            CrossClaw Productions
           </span>
         )}
       </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '../api/base44Client';
+import { db } from '../api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '../components/common/PageHeader';
 import StatCard from '../components/common/StatCard';
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Progress } from "../components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Switch } from "../components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,6 @@ import { Skeleton } from "../components/ui/skeleton";
 import {
   Plus,
   DollarSign,
-  Receipt,
   Wallet,
   TrendingUp,
   MoreVertical,
@@ -42,6 +42,9 @@ import {
   Check,
   X,
   Tag,
+  Briefcase,
+  Flame,
+  Users
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -62,135 +65,81 @@ const CHART_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#e
 export default function Budget() {
   const [activeTab, setActiveTab] = useState('overview');
   const [search, setSearch] = useState('');
+  
+  // Dialog States
   const [budgetDialog, setBudgetDialog] = useState(false);
   const [expenseDialog, setExpenseDialog] = useState(false);
   const [categoryDialog, setCategoryDialog] = useState(false);
+  const [rateCardDialog, setRateCardDialog] = useState(false);
+  
+  // Edit States
   const [editingBudget, setEditingBudget] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [editingRateCard, setEditingRateCard] = useState(null);
+  
   const queryClient = useQueryClient();
 
-  const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
-    queryKey: ['budgets'],
-    queryFn: () => base44.entities.Budget.list('-created_date', 100),
-  });
+  // Queries
+  const { data: budgets = [], isLoading: budgetsLoading } = useQuery({ queryKey: ['budgets'], queryFn: () => db.budgets.list() });
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery({ queryKey: ['expenses'], queryFn: () => db.expenses.list() });
+  const { data: categories = [] } = useQuery({ queryKey: ['budgetCategories'], queryFn: () => db.budgetCategories.list() });
+  const { data: projects = [] } = useQuery({ queryKey: ['projects'], queryFn: () => db.projects.list() });
+  const { data: departments = [] } = useQuery({ queryKey: ['departments'], queryFn: () => db.departments.list() });
+  const { data: roles = [] } = useQuery({ queryKey: ['roles'], queryFn: () => db.roles.list() });
+  const { data: rateCards = [], isLoading: rateCardsLoading } = useQuery({ queryKey: ['rateCards'], queryFn: () => db.rateCards.list() });
 
-  const { data: expenses = [], isLoading: expensesLoading } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: () => base44.entities.Expense.list('-created_date', 200),
-  });
+  // Mutations
+  const createBudgetMutation = useMutation({ mutationFn: (data) => db.budgets.create(data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgets'] }); setBudgetDialog(false); setEditingBudget(null); } });
+  const updateBudgetMutation = useMutation({ mutationFn: ({ id, data }) => db.budgets.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgets'] }); setBudgetDialog(false); setEditingBudget(null); } });
+  const deleteBudgetMutation = useMutation({ mutationFn: (id) => db.budgets.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budgets'] }) });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['budgetCategories'],
-    queryFn: () => base44.entities.BudgetCategory.list(),
-  });
+  const createExpenseMutation = useMutation({ mutationFn: (data) => db.expenses.create(data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['expenses'] }); setExpenseDialog(false); setEditingExpense(null); } });
+  const updateExpenseMutation = useMutation({ mutationFn: ({ id, data }) => db.expenses.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['expenses'] }); setExpenseDialog(false); setEditingExpense(null); } });
+  const deleteExpenseMutation = useMutation({ mutationFn: (id) => db.expenses.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }) });
 
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
-  });
+  const createCategoryMutation = useMutation({ mutationFn: (data) => db.budgetCategories.create(data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgetCategories'] }); setCategoryDialog(false); setEditingCategory(null); } });
+  const updateCategoryMutation = useMutation({ mutationFn: ({ id, data }) => db.budgetCategories.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgetCategories'] }); setCategoryDialog(false); setEditingCategory(null); } });
+  const deleteCategoryMutation = useMutation({ mutationFn: (id) => db.budgetCategories.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budgetCategories'] }) });
 
-  const { data: departments = [] } = useQuery({
-    queryKey: ['departments'],
-    queryFn: () => base44.entities.Department.list(),
-  });
+  const createRateCardMutation = useMutation({ mutationFn: (data) => db.rateCards.create(data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['rateCards'] }); setRateCardDialog(false); setEditingRateCard(null); } });
+  const updateRateCardMutation = useMutation({ mutationFn: ({ id, data }) => db.rateCards.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['rateCards'] }); setRateCardDialog(false); setEditingRateCard(null); } });
+  const deleteRateCardMutation = useMutation({ mutationFn: (id) => db.rateCards.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rateCards'] }) });
 
-  // Budget mutations
-  const createBudgetMutation = useMutation({
-    mutationFn: (data) => base44.entities.Budget.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      setBudgetDialog(false);
-      setEditingBudget(null);
-    },
-  });
-
-  const updateBudgetMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Budget.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      setBudgetDialog(false);
-      setEditingBudget(null);
-    },
-  });
-
-  const deleteBudgetMutation = useMutation({
-    mutationFn: (id) => base44.entities.Budget.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budgets'] }),
-  });
-
-  // Expense mutations
-  const createExpenseMutation = useMutation({
-    mutationFn: (data) => base44.entities.Expense.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      setExpenseDialog(false);
-      setEditingExpense(null);
-    },
-  });
-
-  const updateExpenseMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Expense.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      setExpenseDialog(false);
-      setEditingExpense(null);
-    },
-  });
-
-  const deleteExpenseMutation = useMutation({
-    mutationFn: (id) => base44.entities.Expense.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }),
-  });
-
-  // Category mutations
-  const createCategoryMutation = useMutation({
-    mutationFn: (data) => base44.entities.BudgetCategory.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgetCategories'] });
-      setCategoryDialog(false);
-      setEditingCategory(null);
-    },
-  });
-
-  const updateCategoryMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.BudgetCategory.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgetCategories'] });
-      setCategoryDialog(false);
-      setEditingCategory(null);
-    },
-  });
-
-  const deleteCategoryMutation = useMutation({
-    mutationFn: (id) => base44.entities.BudgetCategory.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budgetCategories'] }),
-  });
-
-  // Calculations
+  // Core Calculations
   const totalBudget = budgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
-  const totalSpent = expenses.filter(e => e.status === 'paid').reduce((sum, e) => sum + (e.amount || 0), 0);
-  const pendingExpenses = expenses.filter(e => e.status === 'pending');
-  const pendingAmount = pendingExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-
-  const getCategoryById = (id) => categories.find(c => c.id === id);
-  const getProjectById = (id) => projects.find(p => p.id === id);
+  const paidExpenses = expenses.filter(e => e.status === 'paid');
+  const totalSpent = paidExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const billableTotal = paidExpenses.filter(e => e.is_billable).reduce((sum, e) => sum + (e.amount || 0), 0);
+  
+  // Calculate Burn Rate (Avg Monthly Spend)
+  const monthlySpending = (() => {
+    const months = {};
+    paidExpenses.forEach(e => {
+      if(!e.date) return;
+      const month = format(new Date(e.date), 'MMM yyyy');
+      months[month] = (months[month] || 0) + (e.amount || 0);
+    });
+    return Object.entries(months).map(([month, amount]) => ({ month, amount })).slice(-6); // Last 6 active months
+  })();
+  const totalLast6Months = monthlySpending.reduce((sum, m) => sum + m.amount, 0);
+  const avgBurnRate = monthlySpending.length ? totalLast6Months / monthlySpending.length : 0;
 
   // Chart data
   const categorySpending = categories.map(cat => ({
     name: cat.name,
-    value: expenses.filter(e => e.category_id === cat.id && e.status === 'paid').reduce((sum, e) => sum + (e.amount || 0), 0),
+    value: paidExpenses.filter(e => e.category_id === cat.id).reduce((sum, e) => sum + (e.amount || 0), 0),
   })).filter(c => c.value > 0);
 
-  const monthlySpending = (() => {
-    const months = {};
-    expenses.filter(e => e.status === 'paid' && e.date).forEach(e => {
-      const month = format(new Date(e.date), 'MMM yyyy');
-      months[month] = (months[month] || 0) + (e.amount || 0);
-    });
-    return Object.entries(months).map(([month, amount]) => ({ month, amount })).slice(-6);
-  })();
+  const billableVsNonBillable = [
+    { name: 'Billable', value: billableTotal },
+    { name: 'Internal/Non-Billable', value: totalSpent - billableTotal }
+  ].filter(c => c.value > 0);
 
+  const getCategoryById = (id) => categories.find(c => c.id === id);
+  const getRoleById = (id) => roles.find(r => r.id === id);
+
+  // Submits
   const handleBudgetSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -203,12 +152,7 @@ export default function Budget() {
       status: formData.get('status'),
       notes: formData.get('notes'),
     };
-
-    if (editingBudget) {
-      updateBudgetMutation.mutate({ id: editingBudget.id, data });
-    } else {
-      createBudgetMutation.mutate(data);
-    }
+    editingBudget ? updateBudgetMutation.mutate({ id: editingBudget.id, data }) : createBudgetMutation.mutate(data);
   };
 
   const handleExpenseSubmit = (e) => {
@@ -225,14 +169,10 @@ export default function Budget() {
       status: formData.get('status'),
       payment_method: formData.get('payment_method'),
       reference_number: formData.get('reference_number'),
+      is_billable: formData.get('is_billable') === 'on',
       notes: formData.get('notes'),
     };
-
-    if (editingExpense) {
-      updateExpenseMutation.mutate({ id: editingExpense.id, data });
-    } else {
-      createExpenseMutation.mutate(data);
-    }
+    editingExpense ? updateExpenseMutation.mutate({ id: editingExpense.id, data }) : createExpenseMutation.mutate(data);
   };
 
   const handleCategorySubmit = (e) => {
@@ -244,20 +184,18 @@ export default function Budget() {
       description: formData.get('description'),
       color: formData.get('color'),
     };
-
-    if (editingCategory) {
-      updateCategoryMutation.mutate({ id: editingCategory.id, data });
-    } else {
-      createCategoryMutation.mutate(data);
-    }
+    editingCategory ? updateCategoryMutation.mutate({ id: editingCategory.id, data }) : createCategoryMutation.mutate(data);
   };
 
-  const handleApproveExpense = (expense) => {
-    updateExpenseMutation.mutate({ id: expense.id, data: { ...expense, status: 'approved' } });
-  };
-
-  const handleRejectExpense = (expense) => {
-    updateExpenseMutation.mutate({ id: expense.id, data: { ...expense, status: 'rejected' } });
+  const handleRateCardSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+      role_id: formData.get('role_id'),
+      hourly_rate: Number(formData.get('hourly_rate')),
+      currency: formData.get('currency') || 'USD'
+    };
+    editingRateCard ? updateRateCardMutation.mutate({ id: editingRateCard.id, data }) : createRateCardMutation.mutate(data);
   };
 
   const expenseColumns = [
@@ -265,16 +203,19 @@ export default function Budget() {
       header: 'Description',
       render: (expense) => (
         <div>
-          <p className="font-medium text-slate-900">{expense.description}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-slate-900">{expense.description}</p>
+            {expense.is_billable && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] h-5 py-0">Billable</Badge>
+            )}
+          </div>
           <p className="text-sm text-slate-500">{expense.vendor}</p>
         </div>
       ),
     },
     {
       header: 'Amount',
-      render: (expense) => (
-        <span className="font-semibold text-slate-900">${expense.amount?.toLocaleString()}</span>
-      ),
+      render: (expense) => <span className="font-semibold text-slate-900">${expense.amount?.toLocaleString()}</span>,
     },
     {
       header: 'Category',
@@ -302,10 +243,10 @@ export default function Budget() {
         <div className="flex items-center gap-2">
           {expense.status === 'pending' && (
             <>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600" onClick={() => handleApproveExpense(expense)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600" onClick={() => updateExpenseMutation.mutate({ id: expense.id, data: { ...expense, status: 'approved' } })}>
                 <Check className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" onClick={() => handleRejectExpense(expense)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" onClick={() => updateExpenseMutation.mutate({ id: expense.id, data: { ...expense, status: 'rejected' } })}>
                 <X className="h-4 w-4" />
               </Button>
             </>
@@ -318,12 +259,10 @@ export default function Budget() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => { setEditingExpense(expense); setExpenseDialog(true); }}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
+                <Pencil className="h-4 w-4 mr-2" /> Edit
               </DropdownMenuItem>
               <DropdownMenuItem className="text-red-600" onClick={() => deleteExpenseMutation.mutate(expense.id)}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                <Trash2 className="h-4 w-4 mr-2" /> Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -335,23 +274,21 @@ export default function Budget() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Budget Management"
-        subtitle="Track budgets, expenses, and financial reports"
+        title="Financials & Budgets"
+        subtitle="Track real-time burn rates, resource costs, and project budgets"
         actions={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => { setEditingCategory(null); setCategoryDialog(true); }}>
-              <Tag className="h-4 w-4 mr-2" />
-              Categories
+              <Tag className="h-4 w-4 mr-2" /> Categories
             </Button>
             <Button onClick={() => { setEditingExpense(null); setExpenseDialog(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Expense
+              <Plus className="h-4 w-4 mr-2" /> Add Expense
             </Button>
           </div>
         }
       />
 
-      {/* Stats */}
+      {/* Real-Time Tracking Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Budget"
@@ -362,20 +299,20 @@ export default function Budget() {
           title="Total Spent"
           value={`$${totalSpent.toLocaleString()}`}
           icon={DollarSign}
-          subtitle={`${Math.round((totalSpent / totalBudget) * 100) || 0}% of budget`}
+          subtitle={`${Math.round((totalSpent / (totalBudget || 1)) * 100)}% of budget`}
         />
         <StatCard
-          title="Pending Approval"
-          value={`$${pendingAmount.toLocaleString()}`}
-          icon={Receipt}
-          subtitle={`${pendingExpenses.length} expenses`}
+          title="Monthly Burn Rate"
+          value={`$${Math.round(avgBurnRate).toLocaleString()}`}
+          icon={Flame}
+          subtitle="Avg over last 6 months"
+          trend="Based on paid expenses"
         />
         <StatCard
-          title="Remaining"
-          value={`$${(totalBudget - totalSpent).toLocaleString()}`}
-          icon={TrendingUp}
-          trend={totalBudget > totalSpent ? "On track" : "Over budget"}
-          trendUp={totalBudget > totalSpent}
+          title="Billable Ratio"
+          value={`${Math.round((billableTotal / (totalSpent || 1)) * 100)}%`}
+          icon={Briefcase}
+          subtitle={`$${billableTotal.toLocaleString()} billable`}
         />
       </div>
 
@@ -384,46 +321,14 @@ export default function Budget() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="budgets">Budgets</TabsTrigger>
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
+          <TabsTrigger value="rates">Rate Cards</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6 space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Spending by Category */}
-            <Card className="border-0 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="border-0 shadow-sm lg:col-span-2">
               <CardHeader>
-                <CardTitle>Spending by Category</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {categorySpending.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">No spending data</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={categorySpending}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={2}
-                        dataKey="value"
-                      >
-                        {categorySpending.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Monthly Spending */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle>Monthly Spending</CardTitle>
+                <CardTitle>Historical Burn Rate (Monthly)</CardTitle>
               </CardHeader>
               <CardContent>
                 {monthlySpending.length === 0 ? (
@@ -434,35 +339,42 @@ export default function Budget() {
                       <XAxis dataKey="month" />
                       <YAxis />
                       <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                      <Bar dataKey="amount" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="amount" fill="#ef4444" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
               </CardContent>
             </Card>
-          </div>
 
-          {/* Pending Expenses */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle>Pending Approvals</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <DataTable
-                columns={expenseColumns}
-                data={pendingExpenses}
-                isLoading={expensesLoading}
-                emptyMessage="No pending expenses"
-              />
-            </CardContent>
-          </Card>
+            <Card className="border-0 shadow-sm">
+              <CardHeader>
+                <CardTitle>Billable vs Internal</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {billableVsNonBillable.length === 0 ? (
+                  <p className="text-center text-slate-500 py-8">No data</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={billableVsNonBillable} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
+                        <Cell fill="#3b82f6" /> {/* Billable */}
+                        <Cell fill="#94a3b8" /> {/* Non-Billable */}
+                      </Pie>
+                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
+        {/* Existing Budgets Tab */}
         <TabsContent value="budgets" className="mt-6">
           <div className="flex justify-end mb-4">
             <Button onClick={() => { setEditingBudget(null); setBudgetDialog(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Budget
+              <Plus className="h-4 w-4 mr-2" /> Create Budget
             </Button>
           </div>
           {budgetsLoading ? (
@@ -470,18 +382,11 @@ export default function Budget() {
               {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48" />)}
             </div>
           ) : budgets.length === 0 ? (
-            <EmptyState
-              icon={Wallet}
-              title="No budgets"
-              description="Create your first budget to start tracking"
-              action={() => setBudgetDialog(true)}
-              actionLabel="Create Budget"
-            />
+            <EmptyState icon={Wallet} title="No budgets" description="Create your first budget to start tracking" action={() => setBudgetDialog(true)} actionLabel="Create Budget" />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {budgets.map(budget => {
-                const budgetExpenses = expenses.filter(e => e.budget_id === budget.id && e.status === 'paid');
-                const spent = budgetExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+                const spent = expenses.filter(e => e.budget_id === budget.id && e.status === 'paid').reduce((sum, e) => sum + (e.amount || 0), 0);
                 const progress = Math.min(Math.round((spent / budget.total_amount) * 100), 100);
 
                 return (
@@ -494,19 +399,11 @@ export default function Budget() {
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => { setEditingBudget(budget); setBudgetDialog(true); }}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600" onClick={() => deleteBudgetMutation.mutate(budget.id)}>
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setEditingBudget(budget); setBudgetDialog(true); }}><Pencil className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600" onClick={() => deleteBudgetMutation.mutate(budget.id)}><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -530,207 +427,143 @@ export default function Budget() {
         <TabsContent value="expenses" className="mt-6">
           <div className="flex flex-col sm:flex-row gap-4 justify-between mb-4">
             <SearchInput value={search} onChange={setSearch} placeholder="Search expenses..." className="sm:w-64" />
-            <Button onClick={() => { setEditingExpense(null); setExpenseDialog(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Expense
-            </Button>
           </div>
           <Card className="border-0 shadow-sm">
             <CardContent className="p-0">
-              <DataTable
-                columns={expenseColumns}
-                data={expenses.filter(e => e.description?.toLowerCase().includes(search.toLowerCase()))}
-                isLoading={expensesLoading}
-                emptyMessage="No expenses found"
-              />
+              <DataTable columns={expenseColumns} data={expenses.filter(e => e.description?.toLowerCase().includes(search.toLowerCase()))} isLoading={expensesLoading} emptyMessage="No expenses found" />
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="rates" className="mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-slate-500">Define hourly billing rates for roles to calculate internal costs vs client invoicing.</p>
+            <Button onClick={() => { setEditingRateCard(null); setRateCardDialog(true); }}>
+              <Plus className="h-4 w-4 mr-2" /> Add Rate Card
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {rateCards.map(rate => (
+              <Card key={rate.id} className="border-0 shadow-sm">
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-slate-100 rounded-lg">
+                      <Users className="h-5 w-5 text-slate-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{getRoleById(rate.role_id)?.name || 'Unknown Role'}</p>
+                      <p className="text-sm text-slate-500">${rate.hourly_rate} / hour</p>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setEditingRateCard(rate); setRateCardDialog(true); }}><Pencil className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-600" onClick={() => deleteRateCardMutation.mutate(rate.id)}><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardContent>
+              </Card>
+            ))}
+            {rateCards.length === 0 && !rateCardsLoading && (
+              <div className="col-span-3">
+                <EmptyState icon={Briefcase} title="No Rate Cards" description="Set up hourly rates for roles to enable cost tracking." action={() => setRateCardDialog(true)} actionLabel="Add Rate" />
+              </div>
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
 
-      {/* Budget Dialog */}
+      {/* Dialogs... */}
       <Dialog open={budgetDialog} onOpenChange={setBudgetDialog}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingBudget ? 'Edit Budget' : 'Create Budget'}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{editingBudget ? 'Edit Budget' : 'Create Budget'}</DialogTitle></DialogHeader>
           <form onSubmit={handleBudgetSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Budget Name</Label>
-              <Input id="name" name="name" required defaultValue={editingBudget?.name} />
-            </div>
+            <div className="space-y-2"><Label>Budget Name</Label><Input name="name" required defaultValue={editingBudget?.name} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fiscal_year">Fiscal Year</Label>
-                <Input id="fiscal_year" name="fiscal_year" type="number" required defaultValue={editingBudget?.fiscal_year || new Date().getFullYear()} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="total_amount">Total Amount ($)</Label>
-                <Input id="total_amount" name="total_amount" type="number" required defaultValue={editingBudget?.total_amount} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="project_id">Project</Label>
-                <Select name="project_id" defaultValue={editingBudget?.project_id || ''}>
-                  <SelectTrigger><SelectValue placeholder="Select project" /></SelectTrigger>
-                  <SelectContent>
-                    {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="department_id">Department</Label>
-                <Select name="department_id" defaultValue={editingBudget?.department_id || ''}>
-                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-                  <SelectContent>
-                    {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="space-y-2"><Label>Fiscal Year</Label><Input name="fiscal_year" type="number" required defaultValue={editingBudget?.fiscal_year || new Date().getFullYear()} /></div>
+              <div className="space-y-2"><Label>Total Amount ($)</Label><Input name="total_amount" type="number" required defaultValue={editingBudget?.total_amount} /></div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label>Status</Label>
               <Select name="status" defaultValue={editingBudget?.status || 'draft'}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {BUDGET_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>)}
-                </SelectContent>
+                <SelectContent>{BUDGET_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea id="notes" name="notes" defaultValue={editingBudget?.notes} rows={2} />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setBudgetDialog(false)}>Cancel</Button>
-              <Button type="submit">{editingBudget ? 'Save' : 'Create'}</Button>
-            </DialogFooter>
+            <DialogFooter><Button type="button" variant="outline" onClick={() => setBudgetDialog(false)}>Cancel</Button><Button type="submit">Save</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Expense Dialog */}
       <Dialog open={expenseDialog} onOpenChange={setExpenseDialog}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{editingExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle></DialogHeader>
           <form onSubmit={handleExpenseSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Input id="description" name="description" required defaultValue={editingExpense?.description} />
+            <div className="space-y-2"><Label>Description</Label><Input name="description" required defaultValue={editingExpense?.description} /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Amount ($)</Label><Input name="amount" type="number" step="0.01" required defaultValue={editingExpense?.amount} /></div>
+              <div className="space-y-2"><Label>Date</Label><Input name="date" type="date" defaultValue={editingExpense?.date} /></div>
             </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="amount">Amount ($)</Label>
-                <Input id="amount" name="amount" type="number" step="0.01" required defaultValue={editingExpense?.amount} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
-                <Input id="date" name="date" type="date" defaultValue={editingExpense?.date} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category_id">Category</Label>
+                <Label>Category</Label>
                 <Select name="category_id" defaultValue={editingExpense?.category_id || ''}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                  <SelectContent>
-                    {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="budget_id">Budget</Label>
+                <Label>Budget</Label>
                 <Select name="budget_id" defaultValue={editingExpense?.budget_id || ''}>
-                  <SelectTrigger><SelectValue placeholder="Select budget" /></SelectTrigger>
-                  <SelectContent>
-                    {budgets.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                  </SelectContent>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{budgets.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="vendor">Vendor</Label>
-              <Input id="vendor" name="vendor" defaultValue={editingExpense?.vendor} />
+            
+            <div className="flex items-center justify-between bg-slate-50 p-3 rounded-lg border border-slate-100 mt-2">
+              <div>
+                <Label className="text-base">Billable to Client</Label>
+                <p className="text-xs text-slate-500">Track this expense for future invoicing.</p>
+              </div>
+              <Switch name="is_billable" defaultChecked={editingExpense?.is_billable} />
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label>Status</Label>
                 <Select name="status" defaultValue={editingExpense?.status || 'pending'}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {EXPENSE_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{EXPENSE_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="payment_method">Payment Method</Label>
-                <Select name="payment_method" defaultValue={editingExpense?.payment_method || 'credit_card'}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PAYMENT_METHODS.map(m => <SelectItem key={m} value={m} className="capitalize">{m.replace(/_/g, ' ')}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="space-y-2"><Label>Vendor</Label><Input name="vendor" defaultValue={editingExpense?.vendor} /></div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="reference_number">Reference Number</Label>
-              <Input id="reference_number" name="reference_number" defaultValue={editingExpense?.reference_number} />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setExpenseDialog(false)}>Cancel</Button>
-              <Button type="submit">{editingExpense ? 'Save' : 'Add'}</Button>
-            </DialogFooter>
+            
+            <DialogFooter><Button type="button" variant="outline" onClick={() => setExpenseDialog(false)}>Cancel</Button><Button type="submit">Save</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Category Dialog */}
-      <Dialog open={categoryDialog} onOpenChange={setCategoryDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Manage Categories</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <Dialog open={rateCardDialog} onOpenChange={setRateCardDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>{editingRateCard ? 'Edit Rate' : 'Set Role Rate'}</DialogTitle></DialogHeader>
+          <form onSubmit={handleRateCardSubmit} className="space-y-4">
             <div className="space-y-2">
-              {categories.map(cat => (
-                <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cat.color || '#6366f1' }} />
-                    <span className="font-medium">{cat.name}</span>
-                    <span className="text-sm text-slate-500">({cat.code})</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingCategory(cat); }}>
-                      <Pencil className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600" onClick={() => deleteCategoryMutation.mutate(cat.id)}>
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+              <Label>Role</Label>
+              <Select name="role_id" defaultValue={editingRateCard?.role_id || ''} required>
+                <SelectTrigger><SelectValue placeholder="Select a role" /></SelectTrigger>
+                <SelectContent>{roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
+              </Select>
             </div>
-            <form onSubmit={handleCategorySubmit} className="space-y-3 pt-4 border-t">
-              <p className="text-sm font-medium">{editingCategory ? 'Edit Category' : 'Add New Category'}</p>
-              <div className="grid grid-cols-2 gap-2">
-                <Input name="name" placeholder="Name" required defaultValue={editingCategory?.name} />
-                <Input name="code" placeholder="Code" required defaultValue={editingCategory?.code} />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Input name="description" placeholder="Description" defaultValue={editingCategory?.description} />
-                <Input name="color" type="color" defaultValue={editingCategory?.color || '#6366f1'} />
-              </div>
-              <div className="flex gap-2">
-                {editingCategory && (
-                  <Button type="button" variant="outline" onClick={() => setEditingCategory(null)}>Cancel</Button>
-                )}
-                <Button type="submit" className="flex-1">{editingCategory ? 'Update' : 'Add'}</Button>
-              </div>
-            </form>
-          </div>
+            <div className="space-y-2"><Label>Hourly Rate ($)</Label><Input name="hourly_rate" type="number" step="1" required defaultValue={editingRateCard?.hourly_rate} /></div>
+            <DialogFooter><Button type="button" variant="outline" onClick={() => setRateCardDialog(false)}>Cancel</Button><Button type="submit">Save</Button></DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '../api/base44Client';
+import { db } from '../api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '../components/common/PageHeader';
 import StatusBadge from '../components/common/StatusBadge';
@@ -69,22 +69,22 @@ export default function GitIntegrations() {
 
   const { data: integrations = [], isLoading: integrationsLoading } = useQuery({
     queryKey: ['gitIntegrations'],
-    queryFn: () => base44.entities.GitIntegration.list(),
+    queryFn: () => db.gitIntegrations.list(),
   });
 
   const { data: repositories = [], isLoading: reposLoading } = useQuery({
     queryKey: ['repositories'],
-    queryFn: () => base44.entities.Repository.list('-created_date', 100),
+    queryFn: () => db.repositories.list('-created_date', 100),
   });
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => db.projects.list(),
   });
 
   // Integration mutations
   const createIntegrationMutation = useMutation({
-    mutationFn: (data) => base44.entities.GitIntegration.create(data),
+    mutationFn: (data) => db.gitIntegrations.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gitIntegrations'] });
       setIntegrationDialog(false);
@@ -93,7 +93,7 @@ export default function GitIntegrations() {
   });
 
   const updateIntegrationMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.GitIntegration.update(id, data),
+    mutationFn: ({ id, data }) => db.gitIntegrations.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gitIntegrations'] });
       setIntegrationDialog(false);
@@ -102,13 +102,13 @@ export default function GitIntegrations() {
   });
 
   const deleteIntegrationMutation = useMutation({
-    mutationFn: (id) => base44.entities.GitIntegration.delete(id),
+    mutationFn: (id) => db.gitIntegrations.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['gitIntegrations'] }),
   });
 
   // Repository mutations
   const createRepoMutation = useMutation({
-    mutationFn: (data) => base44.entities.Repository.create(data),
+    mutationFn: (data) => db.repositories.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] });
       setRepoDialog(false);
@@ -117,7 +117,7 @@ export default function GitIntegrations() {
   });
 
   const updateRepoMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Repository.update(id, data),
+    mutationFn: ({ id, data }) => db.repositories.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['repositories'] });
       setRepoDialog(false);
@@ -126,7 +126,7 @@ export default function GitIntegrations() {
   });
 
   const deleteRepoMutation = useMutation({
-    mutationFn: (id) => base44.entities.Repository.delete(id),
+    mutationFn: (id) => db.repositories.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['repositories'] }),
   });
 
@@ -374,6 +374,33 @@ export default function GitIntegrations() {
                         {repo.is_private && (
                           <Badge variant="secondary">Private</Badge>
                         )}
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <p className="text-xs text-slate-500 mb-2 font-medium flex items-center gap-1">
+                          <RefreshCw className="h-3 w-3" /> 
+                          30-Day Activity
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {/* Generating a mock heatmap grid for 30 days */}
+                          {Array.from({ length: 30 }).map((_, i) => {
+                            // Mocking activity levels (0 to 4)
+                            const activityLevel = Math.floor(Math.random() * 5); 
+                            return (
+                              <div 
+                                key={i} 
+                                className={cn(
+                                  "h-3 w-3 rounded-sm",
+                                  activityLevel === 0 ? "bg-slate-100" :
+                                  activityLevel === 1 ? "bg-emerald-200" :
+                                  activityLevel === 2 ? "bg-emerald-300" :
+                                  activityLevel === 3 ? "bg-emerald-500" :
+                                  "bg-emerald-700"
+                                )}
+                                title={`${activityLevel} commits`}
+                              />
+                            );
+                          })}
+                        </div>
                       </div>
 
                       {project && (

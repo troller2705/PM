@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '../api/base44Client';
+import { db } from '../api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '../components/common/PageHeader';
 import StatusBadge from '../components/common/StatusBadge';
@@ -39,6 +39,8 @@ import {
   Trash2,
   GitBranch,
   AlertCircle,
+  GitPullRequest,
+  GitCommit
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -72,21 +74,21 @@ export default function Tasks() {
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 200),
+    queryFn: () => db.tasks.list('-created_date', 200),
   });
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => db.projects.list(),
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => db.users.list(),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Task.create(data),
+    mutationFn: (data) => db.tasks.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setDialogOpen(false);
@@ -95,12 +97,12 @@ export default function Tasks() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Task.update(id, data),
+    mutationFn: ({ id, data }) => db.tasks.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Task.delete(id),
+    mutationFn: (id) => db.tasks.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
@@ -182,8 +184,17 @@ export default function Tasks() {
       )}
 
       <div className="flex items-center justify-between mt-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-3">
           <StatusBadge status={task.priority} className="text-xs py-0" />
+          
+          {/* NEW: Pull Request Badge Indicator */}
+          {task.pull_requests?.length > 0 && (
+            <Badge variant="outline" className="text-xs gap-1 bg-blue-50 text-blue-700 border-blue-200">
+              <GitPullRequest className="h-3 w-3" />
+              {task.pull_requests.length} PR
+            </Badge>
+          )}
+          
           {task.due_date && (
             <span className="text-xs text-slate-500 flex items-center gap-1">
               <Clock className="h-3 w-3" />
@@ -471,6 +482,35 @@ export default function Tasks() {
                 />
               </div>
             </div>
+            {editingTask && (
+              <div className="space-y-3 pt-4 border-t border-slate-200 mt-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <GitBranch className="h-4 w-4 text-slate-500"/> 
+                    Development Activity
+                  </h4>
+                  <Button type="button" variant="outline" size="sm" className="h-7 text-xs">
+                    Create Branch
+                  </Button>
+                </div>
+                
+                <div className="bg-slate-50 rounded-md p-3 border border-slate-100 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <GitPullRequest className="h-4 w-4 text-green-500" />
+                      <a href="#" className="font-medium text-blue-600 hover:underline">
+                        feat/add-auth-flow #42
+                      </a>
+                    </div>
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">Open</Badge>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 pl-6">
+                    <GitCommit className="h-3 w-3" />
+                    <span>Latest commit: <code className="bg-slate-200 px-1 rounded">a1b2c3d</code> fixes login styling</span>
+                  </div>
+                </div>
+              </div>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancel

@@ -18,7 +18,7 @@ import StatusBadge from '@/components/common/StatusBadge';
 import Avatar from '@/components/common/Avatar';
 import { Plus, MoreVertical, Pencil, Trash2, X, Users, Calendar } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/apiClient';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 

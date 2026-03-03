@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { base44 } from '../api/base44Client';
+import { db } from '../api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import PageHeader from '../components/common/PageHeader';
 import StatCard from '../components/common/StatCard';

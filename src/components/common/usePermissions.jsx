@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { base44 } from '@/api/base44Client';
+import { db } from '@/api/apiClient';
 import { hasPermission, hasAnyPermission, hasAllPermissions, getAccessLevelPermissions } from './permissions';
 
 export function usePermissions() {
@@ -12,7 +12,7 @@ export function usePermissions() {
   useEffect(() => {
     async function loadPermissions() {
       try {
-        const currentUser = await base44.auth.me();
+        const currentUser = await db.auth.me();
         setUser(currentUser);
 
         // Admin users have all permissions
@@ -24,8 +24,8 @@ export function usePermissions() {
 
         // Load roles and permissions
         const [rolesData, accessData] = await Promise.all([
-          base44.entities.Role.list(),
-          base44.entities.ProjectAccess.filter({ user_id: currentUser.id }),
+          db.roles.list(),
+          db.projectAccess.filter({ user_id: currentUser.id }),
         ]);
 
         setRoles(rolesData);
