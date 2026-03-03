@@ -1,204 +1,369 @@
 import React, { useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
-import { db } from '../api/apiClient';
+import { Link } from 'react-router-dom';
+import { createPageUrl } from '@/utils';
+import { db } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageHeader from '../components/common/PageHeader';
-import StatCard from '../components/common/StatCard';
-import StatusBadge from '../components/common/StatusBadge';
-import Avatar from '../components/common/Avatar';
-import EmptyState from '../components/common/EmptyState';
-import DataTable from '../components/common/DataTable';
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Progress } from "../components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import PageHeader from '@/components/common/PageHeader';
+import StatCard from '@/components/common/StatCard';
+import StatusBadge from '@/components/common/StatusBadge';
+import Avatar from '@/components/common/Avatar';
+import EmptyState from '@/components/common/EmptyState';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../components/ui/dialog";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../components/ui/select";
-import { Skeleton } from "../components/ui/skeleton";
-import { ScrollArea } from "../components/ui/scroll-area";
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft,
-  Calendar,
+  ListTodo,
   Clock,
-  CheckCircle2,
-  AlertCircle,
   Users,
+  Calendar,
+  DollarSign,
   GitBranch,
+  Plus,
+  UserPlus,
+  Settings,
+  MoreVertical,
   Pencil,
   Trash2,
-  Plus,
-  MoreVertical,
-  Flag,
-  ListTodo
+  Target,
+  CalendarRange,
 } from 'lucide-react';
+import ProjectResourcePanel from '../components/resources/ProjectResourcePanel';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import { format } from 'date-fns';
-import { cn } from "../lib/utils";
-
-// SVAR React Gantt Import
-import { Gantt, Willow } from "@svar-ui/react-gantt";
-import "@svar-ui/react-gantt/all.css";
+import { cn } from "@/lib/utils";
 
 export default function ProjectDetail() {
-  const [searchParams] = useSearchParams();
-  const projectId = searchParams.get('id');
+  const urlParams = new URLSearchParams(window.location.search);
+  const projectId = urlParams.get('id');
+
   const [activeTab, setActiveTab] = useState('overview');
+  const [memberDialog, setMemberDialog] = useState(false);
   const [milestoneDialog, setMilestoneDialog] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState(null);
   const queryClient = useQueryClient();
 
-  // Queries
-  const { data: projects = [], isLoading: isProjectLoading } = useQuery({ queryKey: ['projects'], queryFn: () => db.projects.list() });
-  const { data: tasks = [], isLoading: isTasksLoading } = useQuery({ queryKey: ['tasks'], queryFn: () => db.tasks.list() });
-  const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: () => db.users.list() });
-  const { data: expenses = [] } = useQuery({ queryKey: ['expenses'], queryFn: () => db.expenses.list() });
-  
-  // Note: Add a mock milestones endpoint to your apiClient later if you want to save these
-  const { data: milestones = [] } = useQuery({ queryKey: ['milestones', projectId], queryFn: () => Promise.resolve([]) }); 
+  const { data: project, isLoading: projectLoading } = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: () => db.projects.filter({ id: projectId }).then(res => res[0]),
+    enabled: !!projectId,
+  });
 
-  const project = projects.find(p => p.id === projectId);
-  const projectTasks = tasks.filter(t => t.project_id === projectId);
-  const projectExpenses = expenses.filter(e => e.project_id === projectId && e.status === 'paid');
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['projectTasks', projectId],
+    queryFn: () => db.tasks.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
 
-  // Stats Calculations
-  const completedTasks = projectTasks.filter(t => t.status === 'done').length;
-  const taskProgress = projectTasks.length > 0 ? Math.round((completedTasks / projectTasks.length) * 100) : 0;
-  const spentBudget = projectExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const budgetProgress = project?.budget ? Math.round((spentBudget / project.budget) * 100) : 0;
+  const { data: milestones = [] } = useQuery({
+    queryKey: ['projectMilestones', projectId],
+    queryFn: () => db.milestones.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
 
-  // Transform Tasks for SVAR Gantt Chart
-  const ganttData = React.useMemo(() => {
-    if (!projectTasks.length) return { tasks: [], links: [] };
+  const { data: sprints = [] } = useQuery({
+    queryKey: ['projectSprints', projectId],
+    queryFn: () => db.sprints.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
 
-    // SVAR Gantt strictly expects numeric IDs and uses 0 for the root parent.
-    // We create a map to reliably convert your string IDs ('t3') to numbers.
-    const idMap = {};
-    let nextId = 1;
-    const getNumId = (strId) => {
-      if (!strId) return 0; // 0 indicates a top-level task in SVAR
-      if (!idMap[strId]) idMap[strId] = nextId++;
-      return idMap[strId];
-    };
+  const { data: repositories = [] } = useQuery({
+    queryKey: ['projectRepos', projectId],
+    queryFn: () => db.repositories.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
 
-    const formattedTasks = projectTasks.map(t => ({
-      id: getNumId(t.id),
-      text: t.title || 'Unnamed Task',
-      start: t.start ? new Date(t.start) : new Date(), 
-      duration: t.duration || (t.estimated_hours ? Math.ceil(t.estimated_hours / 8) : 3),
-      progress: t.progress || (t.status === 'done' ? 100 : t.status === 'in_progress' ? 50 : 0),
-      type: t.task_type === 'epic' ? 'summary' : 'task',
-      parent: getNumId(t.parent), // Safely falls back to 0 if t.parent is undefined
-      open: true 
-    }));
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => db.users.list(),
+  });
 
-    const formattedLinks = projectTasks.flatMap(t => 
-      (t.links || []).map((link, idx) => ({
-        id: getNumId(`${t.id}-link-${idx}`),
-        source: getNumId(link.source),
-        target: getNumId(t.id),
-        // SVAR uses 'e2s' (End-to-Start) for standard dependencies
-        type: link.type === '0' || !link.type ? 'e2s' : link.type 
-      }))
+  const { data: timeLogs = [] } = useQuery({
+    queryKey: ['projectTimeLogs', projectId],
+    queryFn: () => db.timeLogs.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const updateProjectMutation = useMutation({
+    mutationFn: (data) => db.projects.update(projectId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      setMemberDialog(false);
+    },
+  });
+
+  const createMilestoneMutation = useMutation({
+    mutationFn: (data) => db.milestones.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectMilestones', projectId] });
+      setMilestoneDialog(false);
+      setEditingMilestone(null);
+    },
+  });
+
+  const updateMilestoneMutation = useMutation({
+    mutationFn: ({ id, data }) => db.milestones.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectMilestones', projectId] });
+      setMilestoneDialog(false);
+      setEditingMilestone(null);
+    },
+  });
+
+  const deleteMilestoneMutation = useMutation({
+    mutationFn: (id) => db.milestones.delete(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['projectMilestones', projectId] }),
+  });
+
+  if (projectLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
     );
+  }
 
-    return { tasks: formattedTasks, links: formattedLinks };
-  }, [projectTasks]);
+  if (!project) {
+    return (
+      <EmptyState
+        icon={Target}
+        title="Project not found"
+        description="The project you're looking for doesn't exist"
+      />
+    );
+  }
+
+  const getUserById = (id) => users.find(u => u.id === id);
+  const teamMembers = (project.team_member_ids || []).map(id => getUserById(id)).filter(Boolean);
+  const lead = getUserById(project.lead_id);
+
+  const taskStats = {
+    total: tasks.length,
+    done: tasks.filter(t => t.status === 'done').length,
+    inProgress: tasks.filter(t => t.status === 'in_progress').length,
+    blocked: tasks.filter(t => t.status === 'blocked').length,
+  };
+  const progress = taskStats.total > 0 ? Math.round((taskStats.done / taskStats.total) * 100) : 0;
+  const totalLogged = timeLogs.reduce((s, l) => s + (l.hours || 0), 0);
+  const totalEstimated = tasks.reduce((s, t) => s + (t.estimated_hours || 0), 0);
+
+  const handleAddMember = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const userId = formData.get('user_id');
+    const newMembers = [...(project.team_member_ids || []), userId].filter((v, i, a) => a.indexOf(v) === i);
+    updateProjectMutation.mutate({ team_member_ids: newMembers });
+  };
+
+  const handleRemoveMember = (userId) => {
+    const newMembers = (project.team_member_ids || []).filter(id => id !== userId);
+    updateProjectMutation.mutate({ team_member_ids: newMembers });
+  };
 
   const handleMilestoneSubmit = (e) => {
     e.preventDefault();
-    // Implementation for saving milestones goes here
-    setMilestoneDialog(false);
-  };
+    const formData = new FormData(e.target);
+    const data = {
+      name: formData.get('name'),
+      project_id: projectId,
+      description: formData.get('description'),
+      due_date: formData.get('due_date'),
+      status: formData.get('status'),
+    };
 
-  if (isProjectLoading || !project) {
-    return <div className="p-8"><Skeleton className="h-12 w-1/3 mb-6" /><Skeleton className="h-64 w-full" /></div>;
-  }
+    if (editingMilestone) {
+      updateMilestoneMutation.mutate({ id: editingMilestone.id, data });
+    } else {
+      createMilestoneMutation.mutate(data);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link to={createPageUrl('Projects')}><ArrowLeft className="h-5 w-5" /></Link>
+          <Link to={createPageUrl('Projects')}>
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
         </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{project.name}</h1>
-          <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
-            <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">{project.code}</span>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold text-slate-900">{project.name}</h1>
             <StatusBadge status={project.status} />
           </div>
+          <p className="text-slate-500">{project.code}</p>
         </div>
+        <Button variant="outline" asChild>
+          <Link to={createPageUrl(`Tasks?project=${projectId}`)}>
+            <ListTodo className="h-4 w-4 mr-2" />
+            View Tasks
+          </Link>
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Task Progress" value={`${taskProgress}%`} icon={CheckCircle2} subtitle={`${completedTasks} of ${projectTasks.length} tasks`} />
-        <StatCard title="Budget Spent" value={`$${spentBudget.toLocaleString()}`} icon={AlertCircle} subtitle={project.budget ? `${budgetProgress}% of $${project.budget.toLocaleString()}` : 'No budget set'} />
-        <StatCard title="Team Size" value={project.team_member_ids?.length || 0} icon={Users} subtitle="Active contributors" />
-        <StatCard title="Target Date" value={project.target_date ? format(new Date(project.target_date), 'MMM d, yyyy') : 'TBD'} icon={Calendar} trend={project.target_date && new Date(project.target_date) < new Date() ? "Overdue" : "On track"} trendUp={false} />
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard title="Progress" value={`${progress}%`} icon={Target} subtitle={`${taskStats.done}/${taskStats.total} tasks`} />
+        <StatCard title="Team Size" value={teamMembers.length} icon={Users} />
+        <StatCard title="Tasks In Progress" value={taskStats.inProgress} icon={Clock} />
+        <StatCard title="Blocked" value={taskStats.blocked} icon={ListTodo} />
+        <StatCard title="Time Logged" value={`${totalLogged}h`} icon={Clock} subtitle={totalEstimated > 0 ? `${totalEstimated}h est.` : 'No estimate'} />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="timeline">Timeline (Gantt)</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="milestones">Milestones</TabsTrigger>
+          <TabsTrigger value="resources" className="gap-1">
+            <CalendarRange className="h-4 w-4" />Resources
+          </TabsTrigger>
+          <TabsTrigger value="repos">Repositories</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-6 space-y-6">
+        <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2 border-0 shadow-sm">
-              <CardHeader><CardTitle>Project Description</CardTitle></CardHeader>
-              <CardContent><p className="text-slate-600 whitespace-pre-wrap">{project.description || 'No description provided.'}</p></CardContent>
+              <CardHeader>
+                <CardTitle>Project Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {project.description && (
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Description</p>
+                    <p className="text-slate-700">{project.description}</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Type</p>
+                    <Badge variant="outline" className="capitalize">{project.project_type}</Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Priority</p>
+                    <StatusBadge status={project.priority} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Start Date</p>
+                    <p className="text-slate-700">
+                      {project.start_date ? format(new Date(project.start_date), 'MMM d, yyyy') : 'Not set'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Target Date</p>
+                    <p className="text-slate-700">
+                      {project.target_date ? format(new Date(project.target_date), 'MMM d, yyyy') : 'Not set'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Budget</p>
+                    <p className="text-slate-700">
+                      {project.budget ? `$${project.budget.toLocaleString()}` : 'Not set'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Lead</p>
+                    {lead ? (
+                      <div className="flex items-center gap-2">
+                        <Avatar name={lead.full_name} email={lead.email} size="sm" />
+                        <span className="text-slate-700">{lead.full_name}</span>
+                      </div>
+                    ) : (
+                      <p className="text-slate-500">Not assigned</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
             </Card>
+
             <Card className="border-0 shadow-sm">
-              <CardHeader><CardTitle>Recent Activity</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle>Task Breakdown</CardTitle>
+              </CardHeader>
               <CardContent>
-                <div className="text-sm text-slate-500 text-center py-8">Activity feed coming soon...</div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600">Progress</span>
+                    <span className="text-sm font-medium">{progress}%</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    {[
+                      { label: 'Backlog', count: tasks.filter(t => t.status === 'backlog').length, color: 'bg-slate-400' },
+                      { label: 'To Do', count: tasks.filter(t => t.status === 'todo').length, color: 'bg-slate-500' },
+                      { label: 'In Progress', count: taskStats.inProgress, color: 'bg-blue-500' },
+                      { label: 'Review', count: tasks.filter(t => t.status === 'review').length, color: 'bg-purple-500' },
+                      { label: 'Testing', count: tasks.filter(t => t.status === 'testing').length, color: 'bg-amber-500' },
+                      { label: 'Done', count: taskStats.done, color: 'bg-emerald-500' },
+                    ].map(item => (
+                      <div key={item.label} className="flex items-center gap-2">
+                        <div className={cn("w-2 h-2 rounded-full", item.color)} />
+                        <span className="text-sm text-slate-600">{item.label}</span>
+                        <span className="text-sm font-medium ml-auto">{item.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="tasks" className="mt-6">
+        <TabsContent value="team" className="mt-6">
           <Card className="border-0 shadow-sm">
-            <CardContent className="p-0">
-              {projectTasks.length === 0 ? (
-                <EmptyState icon={ListTodo} title="No tasks" description="Create tasks in the Tasks view and assign them to this project." />
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Team Members</CardTitle>
+              <Button onClick={() => setMemberDialog(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Member
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {teamMembers.length === 0 ? (
+                <p className="text-center text-slate-500 py-8">No team members yet</p>
               ) : (
-                <div className="divide-y divide-slate-100">
-                  {projectTasks.map(task => (
-                    <div key={task.id} className="p-4 flex items-center justify-between hover:bg-slate-50">
-                      <div>
-                        <p className="font-medium text-slate-900">{task.title}</p>
-                        <div className="flex gap-2 mt-1">
-                          <StatusBadge status={task.status} className="text-[10px] py-0 h-4" />
-                          <Badge variant="secondary" className="text-[10px] py-0 h-4">{task.task_type}</Badge>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {teamMembers.map(member => (
+                    <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+                      <div className="flex items-center gap-3">
+                        <Avatar name={member.full_name} email={member.email} />
+                        <div>
+                          <p className="font-medium text-slate-900">{member.full_name}</p>
+                          <p className="text-sm text-slate-500">{member.email}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        {task.assignee_id && <Avatar name={users.find(u => u.id === task.assignee_id)?.full_name} size="sm" />}
-                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveMember(member.id)}>
+                        <Trash2 className="h-4 w-4 text-slate-400 hover:text-red-500" />
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -207,54 +372,137 @@ export default function ProjectDetail() {
           </Card>
         </TabsContent>
 
-        {/* NEW TIMELINE/GANTT TAB */}
-        <TabsContent value="timeline" className="mt-6">
+        <TabsContent value="milestones" className="mt-6">
           <Card className="border-0 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-100 mb-4">
-              <div>
-                <CardTitle>Project Schedule & Dependencies</CardTitle>
-                <p className="text-sm text-slate-500 font-normal mt-1">Visualize the critical path and task relationships.</p>
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Milestones</CardTitle>
+              <Button onClick={() => { setEditingMilestone(null); setMilestoneDialog(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Milestone
+              </Button>
             </CardHeader>
-            <CardContent className="p-0">
-              {ganttData.tasks.length === 0 ? (
-                 <EmptyState icon={GitBranch} title="No scheduling data" description="Add tasks with start dates and durations to generate a timeline." />
+            <CardContent>
+              {milestones.length === 0 ? (
+                <p className="text-center text-slate-500 py-8">No milestones yet</p>
               ) : (
-                <div className="h-[500px] w-full bg-white rounded-b-lg overflow-hidden">
-                  <Willow>
-                    <Gantt 
-                      tasks={ganttData.tasks} 
-                      links={ganttData.links} 
-                    />
-                  </Willow>
+                <div className="space-y-4">
+                  {milestones.map(milestone => (
+                    <div key={milestone.id} className="p-4 rounded-lg border border-slate-200">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-medium text-slate-900">{milestone.name}</h3>
+                          {milestone.description && (
+                            <p className="text-sm text-slate-600 mt-1">{milestone.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={milestone.status} />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => { setEditingMilestone(milestone); setMilestoneDialog(true); }}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600" onClick={() => deleteMilestoneMutation.mutate(milestone.id)}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      {milestone.due_date && (
+                        <p className="text-sm text-slate-500 mt-2 flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          Due: {format(new Date(milestone.due_date), 'MMM d, yyyy')}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="milestones" className="mt-6">
-          <div className="flex justify-end mb-4">
-            <Button onClick={() => { setEditingMilestone(null); setMilestoneDialog(true); }}>
-              <Plus className="h-4 w-4 mr-2" /> Add Milestone
-            </Button>
-          </div>
+        <TabsContent value="resources" className="mt-6">
+          <ProjectResourcePanel project={project} tasks={tasks} milestones={milestones} />
+        </TabsContent>
+
+        <TabsContent value="repos" className="mt-6">
           <Card className="border-0 shadow-sm">
-            <CardContent className="p-0">
-              <EmptyState icon={Flag} title="No milestones" description="Define key delivery dates for your project." action={() => setMilestoneDialog(true)} actionLabel="Add Milestone" />
+            <CardHeader>
+              <CardTitle>Linked Repositories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {repositories.length === 0 ? (
+                <p className="text-center text-slate-500 py-8">No repositories linked</p>
+              ) : (
+                <div className="space-y-3">
+                  {repositories.map(repo => (
+                    <div key={repo.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+                      <div className="flex items-center gap-3">
+                        <GitBranch className="h-5 w-5 text-slate-600" />
+                        <div>
+                          <p className="font-medium text-slate-900">{repo.name}</p>
+                          <p className="text-sm text-slate-500 font-mono">{repo.full_name}</p>
+                        </div>
+                      </div>
+                      {repo.url && (
+                        <Button variant="ghost" size="sm" asChild>
+                          <a href={repo.url} target="_blank" rel="noopener noreferrer">Open</a>
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
+      {/* Add Member Dialog */}
+      <Dialog open={memberDialog} onOpenChange={setMemberDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Team Member</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAddMember} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="user_id">Select User</Label>
+              <Select name="user_id" required>
+                <SelectTrigger><SelectValue placeholder="Select a user" /></SelectTrigger>
+                <SelectContent>
+                  {users.filter(u => !(project.team_member_ids || []).includes(u.id)).map(user => (
+                    <SelectItem key={user.id} value={user.id}>{user.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setMemberDialog(false)}>Cancel</Button>
+              <Button type="submit">Add Member</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Milestone Dialog */}
       <Dialog open={milestoneDialog} onOpenChange={setMilestoneDialog}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>{editingMilestone ? 'Edit Milestone' : 'Add Milestone'}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editingMilestone ? 'Edit Milestone' : 'Add Milestone'}</DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleMilestoneSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
-              <Input id="title" name="title" required defaultValue={editingMilestone?.title} />
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" name="name" required defaultValue={editingMilestone?.name} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
