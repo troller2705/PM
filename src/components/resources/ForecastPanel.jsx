@@ -46,9 +46,9 @@ export default function ForecastPanel({ forecasts, projects, users, profiles }) 
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['forecasts'] });
 
-  const createMutation = useMutation({ mutationFn: d => base44.entities.ResourceForecast.create(d), onSuccess: invalidate });
-  const updateMutation = useMutation({ mutationFn: ({ id, d }) => base44.entities.ResourceForecast.update(id, d), onSuccess: invalidate });
-  const deleteMutation = useMutation({ mutationFn: id => base44.entities.ResourceForecast.delete(id), onSuccess: invalidate });
+  const createMutation = useMutation({ mutationFn: d => db.resourceForecasts.create(d), onSuccess: invalidate });
+  const updateMutation = useMutation({ mutationFn: ({ id, d }) => db.resourceForecasts.update(id, d), onSuccess: invalidate });
+  const deleteMutation = useMutation({ mutationFn: id => db.resourceForecasts.delete(id), onSuccess: invalidate });
 
   const openCreate = () => { setEditing(null); setReqSkills([]); setAssigneeIds([]); setDialog(true); };
   const openEdit = (f) => { setEditing(f); setReqSkills(f.required_skills || []); setAssigneeIds(f.assigned_user_ids || []); setDialog(true); };

@@ -47,34 +47,40 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import Dashboard from './pages/Dashboard';
-import Projects from './pages/Projects';
-import Tasks from './pages/Tasks';
-import Team from './pages/Team';
-import Budget from './pages/Budget';
-import GitIntegrations from './pages/GitIntegrations';
 import AccessControl from './pages/AccessControl';
 import Admin from './pages/Admin';
+import Budget from './pages/Budget';
+import Company from './pages/Company';
+import Dashboard from './pages/Dashboard';
+import GitIntegrations from './pages/GitIntegrations';
 import ProjectDetail from './pages/ProjectDetail';
-import Settings from './pages/Settings';
+import Projects from './pages/Projects';
 import Reports from './pages/Reports';
 import Resources from './pages/Resources';
+import ScenarioPlanner from './pages/ScenarioPlanner';
+import Settings from './pages/Settings';
+import TaskDetail from './pages/TaskDetail';
+import Team from './pages/Team';
+import Tasks from './pages/Tasks';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Dashboard": Dashboard,
-    "Projects": Projects,
-    "Tasks": Tasks,
-    "Team": Team,
-    "Budget": Budget,
-    "GitIntegrations": GitIntegrations,
     "AccessControl": AccessControl,
     "Admin": Admin,
+    "Budget": Budget,
+    "Company": Company,
+    "Dashboard": Dashboard,
+    "GitIntegrations": GitIntegrations,
     "ProjectDetail": ProjectDetail,
-    "Settings": Settings,
+    "Projects": Projects,
     "Reports": Reports,
     "Resources": Resources,
+    "ScenarioPlanner": ScenarioPlanner,
+    "Settings": Settings,
+    "TaskDetail": TaskDetail,
+    "Team": Team,
+    "Tasks": Tasks,
 }
 
 export const pagesConfig = {

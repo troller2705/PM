@@ -73,7 +73,7 @@ export default function Admin() {
 
   const { data: settings = [], isLoading: settingsLoading } = useQuery({
     queryKey: ['systemSettings'],
-    queryFn: () => base44.entities.SystemSettings.list(),
+    queryFn: () => db.systemSettings.list(),
   });
 
   const { data: auditLogs = [], isLoading: logsLoading } = useQuery({
@@ -83,11 +83,11 @@ export default function Admin() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => db.users.list(),
   });
 
   const createSettingMutation = useMutation({
-    mutationFn: (data) => base44.entities.SystemSettings.create(data),
+    mutationFn: (data) => db.systemSettings.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['systemSettings'] });
       setSettingDialog(false);
@@ -96,7 +96,7 @@ export default function Admin() {
   });
 
   const updateSettingMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SystemSettings.update(id, data),
+    mutationFn: ({ id, data }) => db.systemSettings.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['systemSettings'] });
       setSettingDialog(false);
@@ -105,7 +105,7 @@ export default function Admin() {
   });
 
   const deleteSettingMutation = useMutation({
-    mutationFn: (id) => base44.entities.SystemSettings.delete(id),
+    mutationFn: (id) => db.systemSettings.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['systemSettings'] }),
   });
 

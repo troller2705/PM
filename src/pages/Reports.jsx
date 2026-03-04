@@ -98,43 +98,43 @@ export default function Reports() {
 
   // Data queries
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
-    queryKey: ['projects'], queryFn: () => base44.entities.Project.list('-created_date', 100),
+    queryKey: ['projects'], queryFn: () => db.projects.list('-created_date', 100),
   });
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
-    queryKey: ['tasks'], queryFn: () => base44.entities.Task.list('-created_date', 500),
+    queryKey: ['tasks'], queryFn: () => db.tasks.list('-created_date', 500),
   });
   const { data: users = [] } = useQuery({
-    queryKey: ['users'], queryFn: () => base44.entities.User.list(),
+    queryKey: ['users'], queryFn: () => db.users.list(),
   });
   const { data: budgets = [] } = useQuery({
-    queryKey: ['budgets'], queryFn: () => base44.entities.Budget.list(),
+    queryKey: ['budgets'], queryFn: () => db.budgets.list(),
   });
   const { data: expenses = [] } = useQuery({
-    queryKey: ['expenses'], queryFn: () => base44.entities.Expense.list('-created_date', 500),
+    queryKey: ['expenses'], queryFn: () => db.expenses.list('-created_date', 500),
   });
   const { data: sprints = [] } = useQuery({
-    queryKey: ['sprints'], queryFn: () => base44.entities.Sprint.list('-created_date', 50),
+    queryKey: ['sprints'], queryFn: () => db.sprints.list('-created_date', 50),
   });
   const { data: timeLogs = [] } = useQuery({
-    queryKey: ['timeLogs'], queryFn: () => base44.entities.TimeLog.list(),
+    queryKey: ['timeLogs'], queryFn: () => db.timeLogs.list(),
   });
   const { data: categories = [] } = useQuery({
-    queryKey: ['budgetCategories'], queryFn: () => base44.entities.BudgetCategory.list(),
+    queryKey: ['budgetCategories'], queryFn: () => db.budgetCategories.list(),
   });
   const { data: savedReports = [], isLoading: savedLoading } = useQuery({
-    queryKey: ['savedReports'], queryFn: () => base44.entities.SavedReport.list('-created_date'),
+    queryKey: ['savedReports'], queryFn: () => db.savedReports.list('-created_date'),
   });
 
   const createReportMutation = useMutation({
-    mutationFn: (data) => base44.entities.SavedReport.create(data),
+    mutationFn: (data) => db.savedReports.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['savedReports'] }); setCreateDialog(false); },
   });
   const updateReportMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SavedReport.update(id, data),
+    mutationFn: ({ id, data }) => db.savedReports.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['savedReports'] }),
   });
   const deleteReportMutation = useMutation({
-    mutationFn: (id) => base44.entities.SavedReport.delete(id),
+    mutationFn: (id) => db.savedReports.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['savedReports'] }),
   });
 

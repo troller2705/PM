@@ -60,21 +60,21 @@ export default function Team() {
 
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => db.users.list(),
   });
 
   const { data: departments = [], isLoading: deptsLoading } = useQuery({
     queryKey: ['departments'],
-    queryFn: () => base44.entities.Department.list(),
+    queryFn: () => db.departments.list(),
   });
 
   const { data: groups = [], isLoading: groupsLoading } = useQuery({
     queryKey: ['ldapGroups'],
-    queryFn: () => base44.entities.LDAPGroup.list(),
+    queryFn: () => db.ldapGroups.list(),
   });
 
   const createDeptMutation = useMutation({
-    mutationFn: (data) => base44.entities.Department.create(data),
+    mutationFn: (data) => db.departments.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       setDepartmentDialog(false);
@@ -83,7 +83,7 @@ export default function Team() {
   });
 
   const updateDeptMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Department.update(id, data),
+    mutationFn: ({ id, data }) => db.departments.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['departments'] });
       setDepartmentDialog(false);
@@ -92,12 +92,12 @@ export default function Team() {
   });
 
   const deleteDeptMutation = useMutation({
-    mutationFn: (id) => base44.entities.Department.delete(id),
+    mutationFn: (id) => db.departments.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['departments'] }),
   });
 
   const createGroupMutation = useMutation({
-    mutationFn: (data) => base44.entities.LDAPGroup.create(data),
+    mutationFn: (data) => db.ldapGroups.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ldapGroups'] });
       setGroupDialog(false);
@@ -106,7 +106,7 @@ export default function Team() {
   });
 
   const updateGroupMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.LDAPGroup.update(id, data),
+    mutationFn: ({ id, data }) => db.ldapGroups.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ldapGroups'] });
       setGroupDialog(false);
@@ -115,7 +115,7 @@ export default function Team() {
   });
 
   const deleteGroupMutation = useMutation({
-    mutationFn: (id) => base44.entities.LDAPGroup.delete(id),
+    mutationFn: (id) => db.ldapGroups.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ldapGroups'] }),
   });
 

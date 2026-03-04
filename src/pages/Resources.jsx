@@ -36,29 +36,29 @@ export default function Resources() {
   const queryClient = useQueryClient();
 
   const { data: users = [], isLoading: usersLoading } = useQuery({
-    queryKey: ['users'], queryFn: () => base44.entities.User.list(),
+    queryKey: ['users'], queryFn: () => db.users.list(),
   });
   const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks'], queryFn: () => base44.entities.Task.list('-created_date', 500),
+    queryKey: ['tasks'], queryFn: () => db.tasks.list('-created_date', 500),
   });
   const { data: projects = [] } = useQuery({
-    queryKey: ['projects'], queryFn: () => base44.entities.Project.list(),
+    queryKey: ['projects'], queryFn: () => db.projects.list(),
   });
   const { data: profiles = [], isLoading: profilesLoading } = useQuery({
-    queryKey: ['resourceProfiles'], queryFn: () => base44.entities.ResourceProfile.list(),
+    queryKey: ['resourceProfiles'], queryFn: () => db.resourceProfiles.list(),
   });
   const { data: forecasts = [] } = useQuery({
-    queryKey: ['forecasts'], queryFn: () => base44.entities.ResourceForecast.list('-created_date'),
+    queryKey: ['forecasts'], queryFn: () => db.resourceForecasts.list('-created_date'),
   });
   const { data: departments = [] } = useQuery({
-    queryKey: ['departments'], queryFn: () => base44.entities.Department.list(),
+    queryKey: ['departments'], queryFn: () => db.departments.list(),
   });
 
   const saveProfileMutation = useMutation({
     mutationFn: async (data) => {
       const existing = profiles.find(p => p.user_id === data.user_id);
-      if (existing) return base44.entities.ResourceProfile.update(existing.id, data);
-      return base44.entities.ResourceProfile.create(data);
+      if (existing) return db.resourceProfiles.update(existing.id, data);
+      return db.resourceProfiles.create(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['resourceProfiles'] });

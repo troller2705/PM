@@ -20,6 +20,7 @@ import {
   GitBranch,
   DollarSign,
   Users,
+  Building2,
   Shield,
   Settings,
   ChevronLeft,
@@ -30,6 +31,7 @@ import {
   X,
   BarChart2,
   CalendarRange,
+  TrendingUp,
 } from 'lucide-react';
 
 const navigation = [
@@ -39,8 +41,9 @@ const navigation = [
   { name: 'Git', href: 'GitIntegrations', icon: GitBranch },
   { name: 'Budget', href: 'Budget', icon: DollarSign },
   { name: 'Resources', href: 'Resources', icon: CalendarRange },
+  { name: 'Scenario Planner', href: 'ScenarioPlanner', icon: TrendingUp },
   { name: 'Reports', href: 'Reports', icon: BarChart2 },
-  { name: 'Team', href: 'Team', icon: Users },
+  { name: 'Company', href: 'Company', icon: Building2 },
   { name: 'Access Control', href: 'AccessControl', icon: Shield },
   { name: 'Admin', href: 'Admin', icon: Settings, adminOnly: true },
 ];

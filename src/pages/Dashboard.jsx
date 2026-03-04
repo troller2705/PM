@@ -26,22 +26,22 @@ import {
 export default function Dashboard() {
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list('-created_date', 50),
+    queryFn: () => db.projects.list('-created_date', 50),
   });
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => base44.entities.Task.list('-created_date', 100),
+    queryFn: () => db.tasks.list('-created_date', 100),
   });
 
   const { data: expenses = [], isLoading: expensesLoading } = useQuery({
     queryKey: ['expenses'],
-    queryFn: () => base44.entities.Expense.list('-created_date', 50),
+    queryFn: () => db.expenses.list('-created_date', 50),
   });
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => db.users.list(),
   });
 
   const isLoading = projectsLoading || tasksLoading || expensesLoading;

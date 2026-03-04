@@ -30,7 +30,7 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    base44.auth.me().then(userData => {
+    db.auth.me().then(userData => {
       setUser(userData);
       if (userData.settings) {
         setFormData(prev => ({ ...prev, ...userData.settings }));

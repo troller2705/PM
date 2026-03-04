@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { db } from '@/api/apiClient';
+import { db } from '@/api/apiClient'; // Using our custom DB client instead of base44
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/common/PageHeader';
 import StatCard from '@/components/common/StatCard';
@@ -48,7 +48,7 @@ import {
   Target,
   CalendarRange,
 } from 'lucide-react';
-import ProjectResourcePanel from '../components/resources/ProjectResourcePanel';
+import ProjectResourcePanel from '@/components/resources/ProjectResourcePanel';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,33 +68,52 @@ export default function ProjectDetail() {
   const [editingMilestone, setEditingMilestone] = useState(null);
   const queryClient = useQueryClient();
 
+  // --- UPDATED QUERIES USING CUSTOM DB CLIENT ---
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['project', projectId],
-    queryFn: () => db.projects.filter({ id: projectId }).then(res => res[0]),
+    queryFn: async () => {
+      const projects = await db.projects.list();
+      return projects.find(p => p.id === projectId);
+    },
     enabled: !!projectId,
   });
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['projectTasks', projectId],
-    queryFn: () => db.tasks.filter({ project_id: projectId }),
+    queryFn: async () => {
+      const allTasks = await db.tasks.list();
+      return allTasks.filter(t => t.project_id === projectId);
+    },
     enabled: !!projectId,
   });
 
   const { data: milestones = [] } = useQuery({
     queryKey: ['projectMilestones', projectId],
-    queryFn: () => db.milestones.filter({ project_id: projectId }),
+    queryFn: async () => {
+      if (!db.milestones) return []; // Fallback if endpoint isn't mapped yet
+      const allMilestones = await db.milestones.list();
+      return allMilestones.filter(m => m.project_id === projectId);
+    },
     enabled: !!projectId,
   });
 
   const { data: sprints = [] } = useQuery({
     queryKey: ['projectSprints', projectId],
-    queryFn: () => db.sprints.filter({ project_id: projectId }),
+    queryFn: async () => {
+      if (!db.sprints) return [];
+      const allSprints = await db.sprints.list();
+      return allSprints.filter(s => s.project_id === projectId);
+    },
     enabled: !!projectId,
   });
 
   const { data: repositories = [] } = useQuery({
     queryKey: ['projectRepos', projectId],
-    queryFn: () => db.repositories.filter({ project_id: projectId }),
+    queryFn: async () => {
+      if (!db.repositories) return [];
+      const allRepos = await db.repositories.list();
+      return allRepos.filter(r => r.project_id === projectId);
+    },
     enabled: !!projectId,
   });
 
@@ -105,10 +124,15 @@ export default function ProjectDetail() {
 
   const { data: timeLogs = [] } = useQuery({
     queryKey: ['projectTimeLogs', projectId],
-    queryFn: () => db.timeLogs.filter({ project_id: projectId }),
+    queryFn: async () => {
+      if (!db.timeLogs) return [];
+      const allLogs = await db.timeLogs.list();
+      return allLogs.filter(l => l.project_id === projectId);
+    },
     enabled: !!projectId,
   });
 
+  // --- UPDATED MUTATIONS ---
   const updateProjectMutation = useMutation({
     mutationFn: (data) => db.projects.update(projectId, data),
     onSuccess: () => {
@@ -118,7 +142,7 @@ export default function ProjectDetail() {
   });
 
   const createMilestoneMutation = useMutation({
-    mutationFn: (data) => db.milestones.create(data),
+    mutationFn: (data) => db.milestones ? db.milestones.create(data) : Promise.resolve(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectMilestones', projectId] });
       setMilestoneDialog(false);
