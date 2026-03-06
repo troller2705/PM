@@ -32,6 +32,8 @@ import {
   BarChart2,
   CalendarRange,
   TrendingUp,
+  LayoutTemplate,
+  Zap,
 } from 'lucide-react';
 
 const navigation = [
@@ -42,6 +44,8 @@ const navigation = [
   { name: 'Budget', href: 'Budget', icon: DollarSign },
   { name: 'Resources', href: 'Resources', icon: CalendarRange },
   { name: 'Scenario Planner', href: 'ScenarioPlanner', icon: TrendingUp },
+  { name: 'Templates', href: 'Templates', icon: LayoutTemplate },
+  { name: 'Workflows', href: 'Workflows', icon: Zap },
   { name: 'Reports', href: 'Reports', icon: BarChart2 },
   { name: 'Company', href: 'Company', icon: Building2 },
   { name: 'Access Control', href: 'AccessControl', icon: Shield },

@@ -1,0 +1,83 @@
+{
+  "name": "ProjectTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Template name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "source_project_id": {
+      "type": "string",
+      "description": "Project this template was created from"
+    },
+    "tasks": {
+      "type": "array",
+      "description": "Snapshot of task structures",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ref_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "task_type": {
+            "type": "string"
+          },
+          "estimated_hours": {
+            "type": "number"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Dependency links between template tasks",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_ref_id": {
+            "type": "string"
+          },
+          "depends_on_ref_id": {
+            "type": "string"
+          },
+          "dependency_type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "project_type": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
