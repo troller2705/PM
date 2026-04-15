@@ -13,45 +13,14 @@ import { Badge } from "../components/ui/badge";
 import { Progress } from "../components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Switch } from "../components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "../components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
-import {
-  Plus,
-  DollarSign,
-  Wallet,
-  TrendingUp,
-  MoreVertical,
-  Pencil,
-  Trash2,
-  Check,
-  X,
-  Tag,
-  Briefcase,
-  Flame,
-  Users
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
+import { Plus, DollarSign, Wallet, MoreVertical, Pencil, Trash2, Check, X, Tag, Briefcase, Flame, Users } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { format } from 'date-fns';
 import { cn } from "../lib/utils";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
@@ -60,19 +29,15 @@ const BUDGET_STATUSES = ['draft', 'pending_approval', 'approved', 'active', 'fro
 const EXPENSE_STATUSES = ['pending', 'approved', 'rejected', 'paid', 'cancelled'];
 const PAYMENT_METHODS = ['credit_card', 'bank_transfer', 'cash', 'invoice', 'other'];
 
-const CHART_COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6'];
-
 export default function Budget() {
   const [activeTab, setActiveTab] = useState('overview');
   const [search, setSearch] = useState('');
   
-  // Dialog States
   const [budgetDialog, setBudgetDialog] = useState(false);
   const [expenseDialog, setExpenseDialog] = useState(false);
   const [categoryDialog, setCategoryDialog] = useState(false);
   const [rateCardDialog, setRateCardDialog] = useState(false);
   
-  // Edit States
   const [editingBudget, setEditingBudget] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
@@ -80,16 +45,13 @@ export default function Budget() {
   
   const queryClient = useQueryClient();
 
-  // Queries
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({ queryKey: ['budgets'], queryFn: () => db.budgets.list() });
   const { data: expenses = [], isLoading: expensesLoading } = useQuery({ queryKey: ['expenses'], queryFn: () => db.expenses.list() });
   const { data: categories = [] } = useQuery({ queryKey: ['budgetCategories'], queryFn: () => db.budgetCategories.list() });
   const { data: projects = [] } = useQuery({ queryKey: ['projects'], queryFn: () => db.projects.list() });
-  const { data: departments = [] } = useQuery({ queryKey: ['departments'], queryFn: () => db.departments.list() });
   const { data: roles = [] } = useQuery({ queryKey: ['roles'], queryFn: () => db.roles.list() });
   const { data: rateCards = [], isLoading: rateCardsLoading } = useQuery({ queryKey: ['rateCards'], queryFn: () => db.rateCards.list() });
 
-  // Mutations
   const createBudgetMutation = useMutation({ mutationFn: (data) => db.budgets.create(data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgets'] }); setBudgetDialog(false); setEditingBudget(null); } });
   const updateBudgetMutation = useMutation({ mutationFn: ({ id, data }) => db.budgets.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgets'] }); setBudgetDialog(false); setEditingBudget(null); } });
   const deleteBudgetMutation = useMutation({ mutationFn: (id) => db.budgets.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budgets'] }) });
@@ -106,13 +68,15 @@ export default function Budget() {
   const updateRateCardMutation = useMutation({ mutationFn: ({ id, data }) => db.rateCards.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['rateCards'] }); setRateCardDialog(false); setEditingRateCard(null); } });
   const deleteRateCardMutation = useMutation({ mutationFn: (id) => db.rateCards.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rateCards'] }) });
 
-  // Core Calculations
-  const totalBudget = budgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
+  // 1. Core Calculations: Safely combine project base budgets and dedicated Budget entities
+  const projectBudgetsTotal = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+  const dedicatedBudgetsTotal = budgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
+  const combinedTotalBudget = projectBudgetsTotal + dedicatedBudgetsTotal;
+
   const paidExpenses = expenses.filter(e => e.status === 'paid');
   const totalSpent = paidExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   const billableTotal = paidExpenses.filter(e => e.is_billable).reduce((sum, e) => sum + (e.amount || 0), 0);
   
-  // Calculate Burn Rate (Avg Monthly Spend)
   const monthlySpending = (() => {
     const months = {};
     paidExpenses.forEach(e => {
@@ -120,16 +84,9 @@ export default function Budget() {
       const month = format(new Date(e.date), 'MMM yyyy');
       months[month] = (months[month] || 0) + (e.amount || 0);
     });
-    return Object.entries(months).map(([month, amount]) => ({ month, amount })).slice(-6); // Last 6 active months
+    return Object.entries(months).map(([month, amount]) => ({ month, amount })).slice(-6);
   })();
-  const totalLast6Months = monthlySpending.reduce((sum, m) => sum + m.amount, 0);
-  const avgBurnRate = monthlySpending.length ? totalLast6Months / monthlySpending.length : 0;
-
-  // Chart data
-  const categorySpending = categories.map(cat => ({
-    name: cat.name,
-    value: paidExpenses.filter(e => e.category_id === cat.id).reduce((sum, e) => sum + (e.amount || 0), 0),
-  })).filter(c => c.value > 0);
+  const avgBurnRate = monthlySpending.length ? monthlySpending.reduce((sum, m) => sum + m.amount, 0) / monthlySpending.length : 0;
 
   const billableVsNonBillable = [
     { name: 'Billable', value: billableTotal },
@@ -139,7 +96,6 @@ export default function Budget() {
   const getCategoryById = (id) => categories.find(c => c.id === id);
   const getRoleById = (id) => roles.find(r => r.id === id);
 
-  // Submits
   const handleBudgetSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -147,8 +103,7 @@ export default function Budget() {
       name: formData.get('name'),
       fiscal_year: Number(formData.get('fiscal_year')),
       total_amount: Number(formData.get('total_amount')),
-      project_id: formData.get('project_id') || null,
-      department_id: formData.get('department_id') || null,
+      project_id: formData.get('project_id') === 'none' ? null : formData.get('project_id'),
       status: formData.get('status'),
       notes: formData.get('notes'),
     };
@@ -161,30 +116,16 @@ export default function Budget() {
     const data = {
       description: formData.get('description'),
       amount: Number(formData.get('amount')),
-      budget_id: formData.get('budget_id') || null,
-      category_id: formData.get('category_id') || null,
-      project_id: formData.get('project_id') || null,
+      budget_id: formData.get('budget_id') === 'none' ? null : formData.get('budget_id'),
+      category_id: formData.get('category_id') === 'none' ? null : formData.get('category_id'),
+      project_id: formData.get('project_id') === 'none' ? null : formData.get('project_id'),
       vendor: formData.get('vendor'),
       date: formData.get('date'),
       status: formData.get('status'),
       payment_method: formData.get('payment_method'),
-      reference_number: formData.get('reference_number'),
       is_billable: formData.get('is_billable') === 'on',
-      notes: formData.get('notes'),
     };
     editingExpense ? updateExpenseMutation.mutate({ id: editingExpense.id, data }) : createExpenseMutation.mutate(data);
-  };
-
-  const handleCategorySubmit = (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const data = {
-      name: formData.get('name'),
-      code: formData.get('code'),
-      description: formData.get('description'),
-      color: formData.get('color'),
-    };
-    editingCategory ? updateCategoryMutation.mutate({ id: editingCategory.id, data }) : createCategoryMutation.mutate(data);
   };
 
   const handleRateCardSubmit = (e) => {
@@ -205,9 +146,7 @@ export default function Budget() {
         <div>
           <div className="flex items-center gap-2">
             <p className="font-medium text-slate-900">{expense.description}</p>
-            {expense.is_billable && (
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] h-5 py-0">Billable</Badge>
-            )}
+            {expense.is_billable && <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] h-5 py-0">Billable</Badge>}
           </div>
           <p className="text-sm text-slate-500">{expense.vendor}</p>
         </div>
@@ -218,15 +157,17 @@ export default function Budget() {
       render: (expense) => <span className="font-semibold text-slate-900">${expense.amount?.toLocaleString()}</span>,
     },
     {
+      header: 'Project',
+      render: (expense) => {
+        const proj = projects.find(p => p.id === expense.project_id);
+        return proj ? <span className="text-sm font-medium text-violet-600">{proj.name}</span> : <span className="text-slate-400">-</span>;
+      }
+    },
+    {
       header: 'Category',
       render: (expense) => {
         const cat = getCategoryById(expense.category_id);
-        return cat ? (
-          <Badge variant="outline" className="gap-1">
-            <Tag className="h-3 w-3" />
-            {cat.name}
-          </Badge>
-        ) : '-';
+        return cat ? <Badge variant="outline" className="gap-1"><Tag className="h-3 w-3" />{cat.name}</Badge> : '-';
       },
     },
     {
@@ -243,27 +184,15 @@ export default function Budget() {
         <div className="flex items-center gap-2">
           {expense.status === 'pending' && (
             <>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600" onClick={() => updateExpenseMutation.mutate({ id: expense.id, data: { ...expense, status: 'approved' } })}>
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" onClick={() => updateExpenseMutation.mutate({ id: expense.id, data: { ...expense, status: 'rejected' } })}>
-                <X className="h-4 w-4" />
-              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600" onClick={() => updateExpenseMutation.mutate({ id: expense.id, data: { ...expense, status: 'approved' } })}><Check className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600" onClick={() => updateExpenseMutation.mutate({ id: expense.id, data: { ...expense, status: 'rejected' } })}><X className="h-4 w-4" /></Button>
             </>
           )}
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => { setEditingExpense(expense); setExpenseDialog(true); }}>
-                <Pencil className="h-4 w-4 mr-2" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-red-600" onClick={() => deleteExpenseMutation.mutate(expense.id)}>
-                <Trash2 className="h-4 w-4 mr-2" /> Delete
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setEditingExpense(expense); setExpenseDialog(true); }}><Pencil className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
+              <DropdownMenuItem className="text-red-600" onClick={() => deleteExpenseMutation.mutate(expense.id)}><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -278,42 +207,16 @@ export default function Budget() {
         subtitle="Track real-time burn rates, resource costs, and project budgets"
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setEditingCategory(null); setCategoryDialog(true); }}>
-              <Tag className="h-4 w-4 mr-2" /> Categories
-            </Button>
-            <Button onClick={() => { setEditingExpense(null); setExpenseDialog(true); }}>
-              <Plus className="h-4 w-4 mr-2" /> Add Expense
-            </Button>
+            <Button onClick={() => { setEditingExpense(null); setExpenseDialog(true); }}><Plus className="h-4 w-4 mr-2" /> Add Expense</Button>
           </div>
         }
       />
 
-      {/* Real-Time Tracking Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Budget"
-          value={`$${totalBudget.toLocaleString()}`}
-          icon={Wallet}
-        />
-        <StatCard
-          title="Total Spent"
-          value={`$${totalSpent.toLocaleString()}`}
-          icon={DollarSign}
-          subtitle={`${Math.round((totalSpent / (totalBudget || 1)) * 100)}% of budget`}
-        />
-        <StatCard
-          title="Monthly Burn Rate"
-          value={`$${Math.round(avgBurnRate).toLocaleString()}`}
-          icon={Flame}
-          subtitle="Avg over last 6 months"
-          trend="Based on paid expenses"
-        />
-        <StatCard
-          title="Billable Ratio"
-          value={`${Math.round((billableTotal / (totalSpent || 1)) * 100)}%`}
-          icon={Briefcase}
-          subtitle={`$${billableTotal.toLocaleString()} billable`}
-        />
+        <StatCard title="Total Budget" value={`$${combinedTotalBudget.toLocaleString()}`} icon={Wallet} subtitle="Includes all project budgets" />
+        <StatCard title="Total Spent" value={`$${totalSpent.toLocaleString()}`} icon={DollarSign} subtitle={`${Math.round((totalSpent / (combinedTotalBudget || 1)) * 100)}% of budget`} />
+        <StatCard title="Monthly Burn Rate" value={`$${Math.round(avgBurnRate).toLocaleString()}`} icon={Flame} subtitle="Avg over last 6 months" />
+        <StatCard title="Billable Ratio" value={`${Math.round((billableTotal / (totalSpent || 1)) * 100)}%`} icon={Briefcase} subtitle={`$${billableTotal.toLocaleString()} billable`} />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -327,38 +230,23 @@ export default function Budget() {
         <TabsContent value="overview" className="mt-6 space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="border-0 shadow-sm lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Historical Burn Rate (Monthly)</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle>Historical Burn Rate</CardTitle></CardHeader>
               <CardContent>
-                {monthlySpending.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">No spending data</p>
-                ) : (
+                {monthlySpending.length === 0 ? <p className="text-center text-slate-500 py-8">No data</p> : (
                   <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={monthlySpending}>
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                      <Bar dataKey="amount" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                    <BarChart data={monthlySpending}><XAxis dataKey="month" /><YAxis /><Tooltip formatter={(value) => `$${value.toLocaleString()}`} /><Bar dataKey="amount" fill="#ef4444" radius={[4, 4, 0, 0]} /></BarChart>
                   </ResponsiveContainer>
                 )}
               </CardContent>
             </Card>
-
             <Card className="border-0 shadow-sm">
-              <CardHeader>
-                <CardTitle>Billable vs Internal</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle>Billable vs Internal</CardTitle></CardHeader>
               <CardContent>
-                {billableVsNonBillable.length === 0 ? (
-                  <p className="text-center text-slate-500 py-8">No data</p>
-                ) : (
+                {billableVsNonBillable.length === 0 ? <p className="text-center text-slate-500 py-8">No data</p> : (
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
                       <Pie data={billableVsNonBillable} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
-                        <Cell fill="#3b82f6" /> {/* Billable */}
-                        <Cell fill="#94a3b8" /> {/* Non-Billable */}
+                        <Cell fill="#3b82f6" /><Cell fill="#94a3b8" />
                       </Pie>
                       <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
                       <Legend />
@@ -370,24 +258,20 @@ export default function Budget() {
           </div>
         </TabsContent>
 
-        {/* Existing Budgets Tab */}
         <TabsContent value="budgets" className="mt-6">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => { setEditingBudget(null); setBudgetDialog(true); }}>
-              <Plus className="h-4 w-4 mr-2" /> Create Budget
-            </Button>
+            <Button onClick={() => { setEditingBudget(null); setBudgetDialog(true); }}><Plus className="h-4 w-4 mr-2" /> Create Budget</Button>
           </div>
           {budgetsLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48" />)}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48" />)}</div>
           ) : budgets.length === 0 ? (
-            <EmptyState icon={Wallet} title="No budgets" description="Create your first budget to start tracking" action={() => setBudgetDialog(true)} actionLabel="Create Budget" />
+            <EmptyState icon={Wallet} title="No budgets" description="Create a dedicated budget to start tracking" action={() => setBudgetDialog(true)} actionLabel="Create Budget" />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {budgets.map(budget => {
                 const spent = expenses.filter(e => e.budget_id === budget.id && e.status === 'paid').reduce((sum, e) => sum + (e.amount || 0), 0);
                 const progress = Math.min(Math.round((spent / budget.total_amount) * 100), 100);
+                const linkedProject = projects.find(p => p.id === budget.project_id);
 
                 return (
                   <Card key={budget.id} className="border-0 shadow-sm">
@@ -395,12 +279,12 @@ export default function Budget() {
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="font-semibold text-slate-900">{budget.name}</h3>
-                          <p className="text-sm text-slate-500">FY {budget.fiscal_year}</p>
+                          <p className="text-sm text-slate-500">
+                            FY {budget.fiscal_year} {linkedProject && `• ${linkedProject.name}`}
+                          </p>
                         </div>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
-                          </DropdownMenuTrigger>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => { setEditingBudget(budget); setBudgetDialog(true); }}><Pencil className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
                             <DropdownMenuItem className="text-red-600" onClick={() => deleteBudgetMutation.mutate(budget.id)}><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
@@ -438,28 +322,21 @@ export default function Budget() {
         <TabsContent value="rates" className="mt-6">
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-slate-500">Define hourly billing rates for roles to calculate internal costs vs client invoicing.</p>
-            <Button onClick={() => { setEditingRateCard(null); setRateCardDialog(true); }}>
-              <Plus className="h-4 w-4 mr-2" /> Add Rate Card
-            </Button>
+            <Button onClick={() => { setEditingRateCard(null); setRateCardDialog(true); }}><Plus className="h-4 w-4 mr-2" /> Add Rate Card</Button>
           </div>
-          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {rateCards.map(rate => (
               <Card key={rate.id} className="border-0 shadow-sm">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-100 rounded-lg">
-                      <Users className="h-5 w-5 text-slate-600" />
-                    </div>
+                    <div className="p-2 bg-slate-100 rounded-lg"><Users className="h-5 w-5 text-slate-600" /></div>
                     <div>
                       <p className="font-semibold text-slate-900">{getRoleById(rate.role_id)?.name || 'Unknown Role'}</p>
                       <p className="text-sm text-slate-500">${rate.hourly_rate} / hour</p>
                     </div>
                   </div>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => { setEditingRateCard(rate); setRateCardDialog(true); }}><Pencil className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
                       <DropdownMenuItem className="text-red-600" onClick={() => deleteRateCardMutation.mutate(rate.id)}><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
@@ -469,24 +346,35 @@ export default function Budget() {
               </Card>
             ))}
             {rateCards.length === 0 && !rateCardsLoading && (
-              <div className="col-span-3">
-                <EmptyState icon={Briefcase} title="No Rate Cards" description="Set up hourly rates for roles to enable cost tracking." action={() => setRateCardDialog(true)} actionLabel="Add Rate" />
-              </div>
+              <div className="col-span-3"><EmptyState icon={Briefcase} title="No Rate Cards" description="Set up hourly rates for roles to enable cost tracking." action={() => setRateCardDialog(true)} actionLabel="Add Rate" /></div>
             )}
           </div>
         </TabsContent>
       </Tabs>
 
-      {/* Dialogs... */}
+      {/* Dialogs */}
       <Dialog open={budgetDialog} onOpenChange={setBudgetDialog}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>{editingBudget ? 'Edit Budget' : 'Create Budget'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingBudget ? 'Edit Budget' : 'Create Dedicated Budget'}</DialogTitle></DialogHeader>
           <form onSubmit={handleBudgetSubmit} className="space-y-4">
             <div className="space-y-2"><Label>Budget Name</Label><Input name="name" required defaultValue={editingBudget?.name} /></div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Fiscal Year</Label><Input name="fiscal_year" type="number" required defaultValue={editingBudget?.fiscal_year || new Date().getFullYear()} /></div>
               <div className="space-y-2"><Label>Total Amount ($)</Label><Input name="total_amount" type="number" required defaultValue={editingBudget?.total_amount} /></div>
             </div>
+            
+            {/* Added Project Linking to Budget */}
+            <div className="space-y-2">
+              <Label>Link to Project (Optional)</Label>
+              <Select name="project_id" defaultValue={editingBudget?.project_id || 'none'}>
+                <SelectTrigger><SelectValue placeholder="Select a project" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label>Status</Label>
               <Select name="status" defaultValue={editingBudget?.status || 'draft'}>
@@ -511,17 +399,24 @@ export default function Budget() {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Category</Label>
-                <Select name="category_id" defaultValue={editingExpense?.category_id || ''}>
+                <Label>Budget</Label>
+                <Select name="budget_id" defaultValue={editingExpense?.budget_id || 'none'}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {budgets.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
+              {/* Added explicit Project ID link for expenses */}
               <div className="space-y-2">
-                <Label>Budget</Label>
-                <Select name="budget_id" defaultValue={editingExpense?.budget_id || ''}>
+                <Label>Project</Label>
+                <Select name="project_id" defaultValue={editingExpense?.project_id || 'none'}>
                   <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{budgets.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
             </div>

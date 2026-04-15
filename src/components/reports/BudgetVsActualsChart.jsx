@@ -7,64 +7,88 @@ import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function BudgetVsActualsChart({ budgets, expenses, projects }) {
-  const data = budgets.map(budget => {
-    const project = projects?.find(p => p.id === budget.project_id);
+export default function BudgetVsActualsChart({ budgets = [], expenses = [], projects = [] }) {
+  const data = [];
+
+  // 1. Projects with Combined Budgets (Base + Dedicated)
+  projects.forEach(project => {
+    const linkedBudgets = budgets.filter(b => b.project_id === project.id);
+    const dedicatedTotal = linkedBudgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
+    const totalBudget = (project.budget || 0) + dedicatedTotal;
+
+    if (totalBudget > 0) {
+      const linkedBudgetIds = linkedBudgets.map(b => b.id);
+      const paidExpenses = expenses.filter(e =>
+        (e.project_id === project.id || linkedBudgetIds.includes(e.budget_id)) && e.status === 'paid'
+      );
+      const actual = paidExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+      const variance = totalBudget - actual;
+      const variancePct = Math.round((variance / totalBudget) * 100);
+
+      data.push({
+        name: project.name,
+        budget: totalBudget,
+        actual,
+        variance,
+        variancePct,
+      });
+    }
+  });
+
+  // 2. Independent Budgets (Not linked to any project)
+  const independentBudgets = budgets.filter(b => !b.project_id);
+  independentBudgets.forEach(budget => {
     const paidExpenses = expenses.filter(e => e.budget_id === budget.id && e.status === 'paid');
-    const actual = paidExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-    const variance = budget.total_amount - actual;
+    const actual = paidExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const variance = (budget.total_amount || 0) - actual;
     const variancePct = budget.total_amount > 0 ? Math.round((variance / budget.total_amount) * 100) : 0;
 
-    return {
-      name: project?.name || budget.name,
-      budget: budget.total_amount,
+    data.push({
+      name: budget.name,
+      budget: budget.total_amount || 0,
       actual,
       variance,
       variancePct,
-    };
-  }).filter(d => d.budget > 0);
+    });
+  });
+
+  // Sort by budget size to make the chart hierarchical
+  data.sort((a, b) => b.budget - a.budget);
 
   const totals = data.reduce(
     (acc, d) => ({ budget: acc.budget + d.budget, actual: acc.actual + d.actual }),
     { budget: 0, actual: 0 }
   );
+  
   const overallVariance = totals.budget - totals.actual;
-  const overallPct = totals.budget > 0 ? Math.round((overallVariance / totals.budget) * 100) : 0;
+  const overallVariancePct = totals.budget > 0 ? Math.abs(Math.round((overallVariance / totals.budget) * 100)) : 0;
 
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="border-0 shadow-sm h-full">
       <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle>Budget vs. Actuals</CardTitle>
-            <CardDescription>Planned spend compared to actual expenditure</CardDescription>
-          </div>
-          <div className={cn(
-            "flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium",
-            overallVariance >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-          )}>
-            {overallVariance >= 0 ? <TrendingDown className="h-4 w-4" /> : <TrendingUp className="h-4 w-4" />}
-            {Math.abs(overallPct)}% {overallVariance >= 0 ? 'under' : 'over'} budget
-          </div>
-        </div>
+        <CardTitle>Budget vs. Actuals</CardTitle>
+        <CardDescription>Combined financial health tracking</CardDescription>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <div className="flex items-center justify-center h-48 text-slate-400">No budget data</div>
+          <div className="flex items-center justify-center h-[300px] text-slate-400">
+            No active budgets configured
+          </div>
         ) : (
           <>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
-                <Tooltip
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={data} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
+                <Tooltip 
+                  formatter={(val) => `$${val.toLocaleString()}`}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
-                  formatter={(val) => [`$${val.toLocaleString()}`, '']}
+                  cursor={{ fill: '#f8fafc' }}
                 />
-                <Legend />
-                <Bar dataKey="budget" name="Budget" fill="#c4b5fd" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]}>
+                <Legend iconType="circle" />
+                <Bar dataKey="budget" name="Budget" fill="#c4b5fd" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]} maxBarSize={50}>
                   {data.map((entry, index) => (
                     <Cell key={index} fill={entry.actual > entry.budget ? '#f87171' : '#34d399'} />
                   ))}
@@ -84,7 +108,10 @@ export default function BudgetVsActualsChart({ budgets, expenses, projects }) {
                 <p className={cn("text-2xl font-semibold", overallVariance >= 0 ? "text-emerald-600" : "text-red-600")}>
                   ${Math.abs(overallVariance).toLocaleString()}
                 </p>
-                <p className="text-sm text-slate-500">{overallVariance >= 0 ? 'Remaining' : 'Over Budget'}</p>
+                <div className="flex items-center justify-center gap-1 text-sm text-slate-500">
+                  {overallVariance >= 0 ? <TrendingUp className="h-3 w-3 text-emerald-500" /> : <TrendingDown className="h-3 w-3 text-red-500" />}
+                  {overallVariance >= 0 ? 'Remaining' : 'Over Budget'}
+                </div>
               </div>
             </div>
           </>

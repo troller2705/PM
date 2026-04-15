@@ -169,14 +169,27 @@ export default function Team() {
     }
   };
 
-  const handleInvite = async (e) => {
+  const inviteMutation = useMutation({
+    mutationFn: (data) => db.users.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setInviteDialog(false);
+    },
+  });
+
+  const handleInvite = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const email = formData.get('email');
     const role = formData.get('role');
     
-    await base44.users.inviteUser(email, role);
-    setInviteDialog(false);
+    // Simulate inviting a user by adding them to the mock DB with a placeholder name
+    inviteMutation.mutate({ 
+      email, 
+      role, 
+      full_name: email.split('@')[0], 
+      status: 'invited' 
+    });
   };
 
   const userColumns = [

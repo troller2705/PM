@@ -78,7 +78,7 @@ export default function Admin() {
 
   const { data: auditLogs = [], isLoading: logsLoading } = useQuery({
     queryKey: ['auditLogs'],
-    queryFn: () => base44.entities.AuditLog.list('-created_date', 100),
+    queryFn: () => db.auditLogs.list(),
   });
 
   const { data: users = [] } = useQuery({

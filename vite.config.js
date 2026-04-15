@@ -6,7 +6,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   logLevel: 'error', // Suppress warnings, only show errors
   server: {
-    open: true, // This will automatically open the browser on start
+    open: false, // This will automatically open the browser on start
     port: 5173  // You can specify a port if needed
   },
   plugins: [

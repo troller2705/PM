@@ -24,7 +24,10 @@ export default function ProjectResourcePanel({ project, tasks, milestones }) {
 
   const { data: forecasts = [], isLoading: forecastsLoading } = useQuery({
     queryKey: ['projectForecasts', project.id],
-    queryFn: () => db.resourceForecasts.filter({ project_id: project.id }),
+    queryFn: async () => {
+      const allForecasts = await db.resourceForecasts.list();
+      return allForecasts.filter(f => f.project_id === project.id);
+    },
     enabled: !!project.id,
   });
 
@@ -40,7 +43,7 @@ export default function ProjectResourcePanel({ project, tasks, milestones }) {
 
   const { data: allTasks = [] } = useQuery({
     queryKey: ['tasks'],
-    queryFn: () => db.tasks.list('-created_date', 500),
+    queryFn: () => db.tasks.list(),
   });
 
   const createMutation = useMutation({
@@ -87,57 +90,52 @@ export default function ProjectResourcePanel({ project, tasks, milestones }) {
     }).filter(Boolean);
   }, [tasks, forecasts, users, profiles, allTasks, project]);
 
-  // AI: pull scope & skills from project
+  // Simulated AI Generation (Replaces base44.integrations.Core.InvokeLLM)
   const handleAIPull = async () => {
     setGenerating(true);
-    const prompt = `
-You are a resource planning assistant for a game studio.
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-Given the following project info, extract resource forecasts — one per major skill area or phase.
+    // Analyze current tasks and milestones to create smart mock forecasts
+    const hasCodeTasks = tasks.some(t => t.title.toLowerCase().includes('api') || t.task_type === 'bug');
+    const hasDesignTasks = tasks.some(t => t.title.toLowerCase().includes('design') || t.title.toLowerCase().includes('ui'));
 
-Project name: ${project.name}
-Description: ${project.description || 'No description provided'}
-Status: ${project.status}
-Start date: ${project.start_date || 'unknown'}
-Target date: ${project.target_date || 'unknown'}
-Milestones: ${milestones.map(m => m.name).join(', ') || 'none'}
-Task types present: ${[...new Set(tasks.map(t => t.task_type))].join(', ') || 'none'}
-Current tasks (sample): ${tasks.slice(0, 10).map(t => t.title).join('; ') || 'none'}
+    const generated = [];
+    
+    if (hasCodeTasks || tasks.length === 0) {
+      generated.push({
+        title: "Core Engineering Team",
+        required_skills: ["Software Engineering", "Backend", "Frontend"],
+        headcount: 2,
+        required_hours: 120,
+        priority: "critical",
+        notes: "Based on the volume of technical tasks and feature implementation required."
+      });
+    }
+    
+    if (hasDesignTasks || tasks.length === 0) {
+      generated.push({
+        title: "UX/UI Design",
+        required_skills: ["Figma", "User Experience"],
+        headcount: 1,
+        required_hours: 40,
+        priority: "medium",
+        notes: "Required for interface design and user flows."
+      });
+    }
 
-Generate 2–4 resource forecast objects. For each, output:
-- title: short descriptive title
-- required_skills: array of 1–4 skill strings
-- headcount: number (1–5)
-- required_hours: estimated total hours
-- priority: one of low, medium, high, critical
-- notes: one sentence rationale
+    if (milestones.length > 2) {
+      generated.push({
+        title: "QA & Testing",
+        required_skills: ["Quality Assurance", "Testing"],
+        headcount: 1,
+        required_hours: 60,
+        priority: "high",
+        notes: "Needed to validate deliverables across multiple project phases."
+      });
+    }
 
-Respond with a JSON array of forecast objects.
-`;
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          forecasts: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                title: { type: 'string' },
-                required_skills: { type: 'array', items: { type: 'string' } },
-                headcount: { type: 'number' },
-                required_hours: { type: 'number' },
-                priority: { type: 'string' },
-                notes: { type: 'string' },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const generated = result?.forecasts || [];
     for (const f of generated) {
       await createMutation.mutateAsync({
         ...f,
@@ -148,6 +146,7 @@ Respond with a JSON array of forecast objects.
         end_date: project.target_date || null,
       });
     }
+    
     setGenerating(false);
   };
 
@@ -252,7 +251,7 @@ Respond with a JSON array of forecast objects.
               <p className="text-sm text-slate-400 mb-3">No resource forecasts for this project yet.</p>
               <Button variant="outline" size="sm" onClick={handleAIPull} disabled={generating}>
                 <Sparkles className="h-4 w-4 mr-2" />
-                Auto-generate from project description
+                Auto-generate from project scope
               </Button>
             </div>
           ) : (

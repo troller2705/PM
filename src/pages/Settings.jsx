@@ -40,7 +40,7 @@ export default function Settings() {
   }, []);
 
   const updateMutation = useMutation({
-    mutationFn: (data) => base44.auth.updateMe({ settings: data }),
+    mutationFn: (data) => db.users.update(user.id, { settings: data }),
     onSuccess: () => {
       toast.success('Settings saved successfully');
     },

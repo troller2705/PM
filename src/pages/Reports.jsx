@@ -154,7 +154,9 @@ export default function Reports() {
         return acc + (tasks.filter(t => t.project_id === p.id && t.status === 'done').length / pt.length) * 100;
       }, 0) / projects.filter(p => tasks.some(t => t.project_id === p.id)).length) || 0
     : 0;
-  const totalBudget = budgets.reduce((s, b) => s + (b.total_amount || 0), 0);
+  const projectBudgetsTotal = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+  const dedicatedBudgetsTotal = budgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
+  const totalBudget = projectBudgetsTotal + dedicatedBudgetsTotal;
   const totalSpent = expenses.filter(e => e.status === 'paid').reduce((s, e) => s + (e.amount || 0), 0);
   const budgetUtilization = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 

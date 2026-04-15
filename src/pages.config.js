@@ -16,6 +16,7 @@ import Team from './pages/Team';
 import Templates from './pages/Templates';
 import Workflows from './pages/Workflows';
 import __Layout from './Layout.jsx';
+import Login from './pages/Login';
 
 
 export const PAGES = {
@@ -36,6 +37,7 @@ export const PAGES = {
     "Team": Team,
     "Templates": Templates,
     "Workflows": Workflows,
+    "Login": Login,
 }
 
 export const pagesConfig = {

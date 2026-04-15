@@ -19,7 +19,6 @@ import {
   ListTodo,
   GitBranch,
   DollarSign,
-  Users,
   Building2,
   Shield,
   Settings,
@@ -35,6 +34,7 @@ import {
   LayoutTemplate,
   Zap,
 } from 'lucide-react';
+import { useAuth } from './lib/AuthContext';
 
 const navigation = [
   { name: 'Dashboard', href: 'Dashboard', icon: LayoutDashboard },
@@ -56,6 +56,7 @@ export default function Layout({ children, currentPageName }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const { logout } = useAuth();
 
   useEffect(() => {
     db.auth.me().then(setUser).catch(() => {});
@@ -130,7 +131,7 @@ export default function Layout({ children, currentPageName }) {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => base44.auth.logout()}>
+              <DropdownMenuItem onClick={() => logout()}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign out
               </DropdownMenuItem>
