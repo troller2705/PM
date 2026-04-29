@@ -1,29 +1,29 @@
 import React, { useState } from 'react';
-import { db } from '@/api/apiClient';
+import { db } from '../api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageHeader from '@/components/common/PageHeader';
-import EmptyState from '@/components/common/EmptyState';
-import StatusBadge from '@/components/common/StatusBadge';
-import Avatar from '@/components/common/Avatar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Separator } from '@/components/ui/separator';
+import PageHeader from '../components/common/PageHeader';
+import EmptyState from '../components/common/EmptyState';
+import StatusBadge from '../components/common/StatusBadge';
+import Avatar from '../components/common/Avatar';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Switch } from '../components/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Skeleton } from '../components/ui/skeleton';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu';
+import { Separator } from '../components/ui/separator';
 import {
   Zap, Plus, MoreVertical, Trash2, Pencil, ArrowRight,
   CheckCircle, XCircle, Clock, GitMerge, Bell
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils';
 
 const TRIGGER_EVENTS = [
   { value: 'status_change', label: 'Task Status Changes' },
@@ -172,20 +172,20 @@ function RuleDialog({ open, onOpenChange, rule, users, projects, onSave }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>From Status (optional)</Label>
-                <Select name="from_status" defaultValue={rule?.trigger_condition?.from_status || ''}>
+                <Select name="from_status" defaultValue={rule?.trigger_condition?.from_status || 'any'}>
                   <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={null}>Any</SelectItem>
+                    <SelectItem value="any">Any</SelectItem>
                     {TASK_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g,' ')}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>To Status</Label>
-                <Select name="to_status" defaultValue={rule?.trigger_condition?.to_status || ''}>
+                <Select name="to_status" defaultValue={rule?.trigger_condition?.to_status || 'any'}>
                   <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={null}>Any</SelectItem>
+                    <SelectItem value="any">Any</SelectItem>
                     {TASK_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g,' ')}</SelectItem>)}
                   </SelectContent>
                 </Select>
@@ -196,20 +196,20 @@ function RuleDialog({ open, onOpenChange, rule, users, projects, onSave }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Project Filter (optional)</Label>
-              <Select name="project_id_cond" defaultValue={rule?.trigger_condition?.project_id || ''}>
+              <Select name="project_id_cond" defaultValue={rule?.trigger_condition?.project_id || 'any'}>
                 <SelectTrigger><SelectValue placeholder="Any project" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Any project</SelectItem>
+                  <SelectItem value="any">Any project</SelectItem>
                   {projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Priority Filter (optional)</Label>
-              <Select name="priority_cond" defaultValue={rule?.trigger_condition?.priority || ''}>
+              <Select name="priority_cond" defaultValue={rule?.trigger_condition?.priority || 'any'}>
                 <SelectTrigger><SelectValue placeholder="Any priority" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Any priority</SelectItem>
+                  <SelectItem value="any">Any priority</SelectItem>
                   {['low', 'medium', 'high', 'critical'].map(p => <SelectItem key={p} value={p} className="capitalize">{p}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -232,7 +232,7 @@ function RuleDialog({ open, onOpenChange, rule, users, projects, onSave }) {
           {actionType === 'assign_to_user' && (
             <div className="space-y-2">
               <Label>Assign to</Label>
-              <Select name="action_user_id" defaultValue={rule?.action_config?.user_id || ''}>
+              <Select name="action_user_id" defaultValue={rule?.action_config?.user_id || ''} required>
                 <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
                 <SelectContent>{users.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}</SelectContent>
               </Select>
@@ -242,7 +242,7 @@ function RuleDialog({ open, onOpenChange, rule, users, projects, onSave }) {
           {actionType === 'change_status' && (
             <div className="space-y-2">
               <Label>Set status to</Label>
-              <Select name="action_status" defaultValue={rule?.action_config?.status || ''}>
+              <Select name="action_status" defaultValue={rule?.action_config?.status || ''} required>
                 <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
                 <SelectContent>{TASK_STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g,' ')}</SelectItem>)}</SelectContent>
               </Select>
@@ -253,7 +253,7 @@ function RuleDialog({ open, onOpenChange, rule, users, projects, onSave }) {
             <>
               <div className="space-y-2">
                 <Label>Approver</Label>
-                <Select name="approver_ids" defaultValue={rule?.action_config?.approver_ids?.[0] || ''}>
+                <Select name="approver_ids" defaultValue={rule?.action_config?.approver_ids?.[0] || ''} required>
                   <SelectTrigger><SelectValue placeholder="Select approver" /></SelectTrigger>
                   <SelectContent>{users.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -308,7 +308,7 @@ function ApprovalCard({ approval, users, onApprove, onReject }) {
               <span>Requested by {requester.full_name}</span>
             </div>
           )}
-          <span>{format(new Date(approval.created_date), 'MMM d, yyyy')}</span>
+          <span>{approval.created_date ? format(new Date(approval.created_date), 'MMM d, yyyy') : 'No Date'}</span>
         </div>
         {approvers.length > 0 && (
           <p className="text-xs text-slate-400 mb-3">

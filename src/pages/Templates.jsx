@@ -5,7 +5,7 @@ import PageHeader from '@/components/common/PageHeader';
 import EmptyState from '@/components/common/EmptyState';
 import StatusBadge from '@/components/common/StatusBadge';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/use-toast';
 
 const PROJECT_STATUSES = ['planning', 'pre_production', 'production', 'alpha', 'beta', 'gold', 'live', 'maintenance'];
 const PROJECT_TYPES = ['game', 'dlc', 'update', 'tool', 'prototype', 'other'];
@@ -37,10 +38,11 @@ export default function Templates() {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [expandedTemplate, setExpandedTemplate] = useState(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['projectTemplates'],
-    queryFn: () => db.projectTemplates.list('-created_date'),
+    queryFn: () => db.projectTemplates.list(),
   });
 
   const { data: projects = [] } = useQuery({
@@ -60,7 +62,10 @@ export default function Templates() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => db.projectTemplates.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['projectTemplates'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectTemplates'] });
+      toast({ title: "Template deleted" });
+    },
   });
 
   const saveTemplateMutation = useMutation({
@@ -68,6 +73,7 @@ export default function Templates() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectTemplates'] });
       setSaveDialogOpen(false);
+      toast({ title: "Template saved successfully" });
     },
   });
 
@@ -113,7 +119,11 @@ export default function Templates() {
       queryClient.invalidateQueries({ queryKey: ['taskDependencies'] });
       setUseDialogOpen(false);
       setSelectedTemplate(null);
+      toast({ title: "Project created from template!" });
     },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Error creating project", description: error.message });
+    }
   });
 
   const handleSaveTemplate = (e) => {
@@ -146,10 +156,11 @@ export default function Templates() {
       name: fd.get('name'),
       description: fd.get('description'),
       source_project_id: projectId,
-      project_type: project?.project_type || '',
+      project_type: project?.project_type || 'game',
       tasks: templateTasks,
       dependencies: templateDeps,
       tags: [],
+      created_date: new Date().toISOString(),
     });
   };
 
@@ -165,6 +176,11 @@ export default function Templates() {
         project_type: fd.get('project_type') || selectedTemplate.project_type || 'game',
         start_date: fd.get('start_date') || null,
         target_date: fd.get('target_date') || null,
+        budget: 0,
+        spent: 0,
+        team_member_ids: [],
+        department_id: null,
+        lead_id: null
       },
       template: selectedTemplate,
     });
@@ -232,11 +248,11 @@ export default function Templates() {
                     <div className="flex items-center gap-3 text-xs text-slate-500 mb-3">
                       <span className="flex items-center gap-1"><ListTodo className="h-3 w-3" />{tpl.tasks?.length || 0} tasks</span>
                       <span className="flex items-center gap-1"><Link2 className="h-3 w-3" />{tpl.dependencies?.length || 0} deps</span>
-                      {tpl.project_type && <Badge variant="secondary" className="text-xs capitalize">{tpl.project_type}</Badge>}
+                      {tpl.project_type && <Badge variant="secondary" className="text-xs capitalize">{tpl.project_type.replace(/_/g, ' ')}</Badge>}
                     </div>
 
                     <div className="text-xs text-slate-400 mb-3">
-                      Saved {format(new Date(tpl.created_date), 'MMM d, yyyy')}
+                      {tpl.created_date ? `Saved ${format(new Date(tpl.created_date), 'MMM d, yyyy')}` : 'No date'}
                     </div>
 
                     {/* Expand/collapse task list */}
@@ -250,7 +266,7 @@ export default function Templates() {
                           {isExpanded ? 'Hide tasks' : 'Preview tasks'}
                         </button>
                         {isExpanded && (
-                          <div className="mt-3 space-y-1 max-h-48 overflow-y-auto">
+                          <div className="mt-3 space-y-1 max-h-48 overflow-y-auto pr-2">
                             {tpl.tasks.map((t, i) => (
                               <div key={i} className="flex items-center gap-2 text-xs py-1 px-2 bg-slate-50 rounded">
                                 <StatusBadge status={t.priority} className="text-[10px] py-0 px-1" />
@@ -350,7 +366,7 @@ export default function Templates() {
               </div>
               <div className="space-y-2">
                 <Label>Description</Label>
-                <Textarea name="description" placeholder="Project description..." rows={2} />
+                <Textarea name="description" placeholder="Project description..." rows={2} defaultValue={selectedTemplate?.description} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

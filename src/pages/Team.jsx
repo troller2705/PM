@@ -8,7 +8,7 @@ import EmptyState from '../components/common/EmptyState';
 import Avatar from '../components/common/Avatar';
 import DataTable from '../components/common/DataTable';
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import {
@@ -34,7 +34,6 @@ import {
   Users,
   Building2,
   FolderTree,
-  Mail,
   MoreVertical,
   Pencil,
   Trash2,
@@ -140,7 +139,6 @@ export default function Team() {
       code: formData.get('code'),
       description: formData.get('description'),
       manager_id: formData.get('manager_id') || null,
-      budget_allocation: formData.get('budget_allocation') ? Number(formData.get('budget_allocation')) : null,
       status: formData.get('status'),
     };
 
@@ -325,11 +323,6 @@ export default function Team() {
                     {dept.description && (
                       <p className="text-sm text-slate-600 line-clamp-2 mb-3">{dept.description}</p>
                     )}
-                    {dept.budget_allocation && (
-                      <p className="text-sm text-slate-500">
-                        Budget: ${dept.budget_allocation.toLocaleString()}
-                      </p>
-                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -452,15 +445,6 @@ export default function Team() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="budget_allocation">Budget Allocation ($)</Label>
-              <Input 
-                id="budget_allocation" 
-                name="budget_allocation" 
-                type="number" 
-                defaultValue={editingDept?.budget_allocation} 
-              />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDepartmentDialog(false)}>Cancel</Button>

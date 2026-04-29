@@ -11,7 +11,7 @@ import Avatar from '../components/common/Avatar';
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Progress } from "../components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,7 @@ import {
 } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
 import {
-  Plus, FolderKanban, Calendar, Users, MoreVertical,
+  Plus, FolderKanban, Calendar, MoreVertical,
   Pencil, Trash2, ExternalLink, LayoutGrid, List
 } from 'lucide-react';
 import {
@@ -78,14 +78,13 @@ export default function Projects() {
   };
 
   const getFinancialHealth = (project) => {
-    // 1. Calculate the total budget (Project Base Budget + any dedicated Budget Entities)
+    // Calculate total budget strictly from dedicated Budget entities
     const linkedBudgets = budgets.filter(b => b.project_id === project.id);
-    const dedicatedBudgetTotal = linkedBudgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
-    const totalBudget = (project.budget || 0) + dedicatedBudgetTotal;
+    const totalBudget = linkedBudgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
     
     if (totalBudget === 0) return null;
 
-    // 2. Find all expenses linked either directly to the project or through one of its dedicated budgets
+    // Find all expenses linked either directly to the project or through one of its dedicated budgets
     const linkedBudgetIds = linkedBudgets.map(b => b.id);
     const spent = expenses.filter(e => 
       (e.project_id === project.id || linkedBudgetIds.includes(e.budget_id)) && e.status === 'paid'
@@ -108,7 +107,6 @@ export default function Projects() {
       project_type: formData.get('project_type'),
       start_date: formData.get('start_date'),
       target_date: formData.get('target_date'),
-      budget: formData.get('budget') ? Number(formData.get('budget')) : null,
     };
     editingProject ? updateMutation.mutate({ id: editingProject.id, data }) : createMutation.mutate(data);
   };
@@ -274,7 +272,7 @@ export default function Projects() {
               <div className="space-y-2"><Label>Start Date</Label><Input name="start_date" type="date" defaultValue={editingProject?.start_date} /></div>
               <div className="space-y-2"><Label>Target Date</Label><Input name="target_date" type="date" defaultValue={editingProject?.target_date} /></div>
             </div>
-            <div className="space-y-2"><Label>Base Budget ($)</Label><Input name="budget" type="number" defaultValue={editingProject?.budget} /></div>
+            {/* The base budget field has been removed. Budgets are now tracked in the Budget tab. */}
             <DialogFooter><Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button type="submit">Save</Button></DialogFooter>
           </form>
         </DialogContent>

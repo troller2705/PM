@@ -3,7 +3,6 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { db } from '@/api/apiClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import PageHeader from '@/components/common/PageHeader';
 import StatCard from '@/components/common/StatCard';
 import StatusBadge from '@/components/common/StatusBadge';
 import Avatar from '@/components/common/Avatar';
@@ -66,21 +65,32 @@ export default function ProjectDetail() {
       return {
         id: `m_${m.id}`,
         title: `🚩 ${m.name}`,
+        start_date: m.start_date || project?.start_date,
         due_date: m.due_date || project?.target_date,
         status: m.status,
         estimated_hours: estHours,
         task_type: 'epic',
+        parent_task_id: null,
       };
     });
-    return [...milestoneTasks, ...tasks];
+    
+    // We want the tasks to visually live underneath their respective milestones on the Gantt chart if they are linked.
+    const mappedTasks = tasks.map(t => {
+      if (t.milestone_id) {
+         return { ...t, parent_task_id: `m_${t.milestone_id}` };
+      }
+      return t;
+    });
+
+    return [...milestoneTasks, ...mappedTasks];
   }, [milestones, tasks, project]);
 
   if (projectLoading) return <div className="space-y-6 p-6"><Skeleton className="h-10 w-64" /><Skeleton className="h-96" /></div>;
   if (!project) return <EmptyState icon={Target} title="Project not found" description="The project you're looking for doesn't exist" />;
 
   const getUserById = (id) => users.find(u => u.id === id);
-  const teamMembers = (project.team_member_ids || []).map(id => getUserById(id)).filter(Boolean);
-  const lead = getUserById(project.lead_id);
+  const teamMembers = (project?.team_member_ids || []).map(id => getUserById(id)).filter(Boolean);
+  const lead = getUserById(project?.lead_id);
 
   const taskStats = { total: tasks.length, done: tasks.filter(t => t.status === 'done').length, inProgress: tasks.filter(t => t.status === 'in_progress').length, blocked: tasks.filter(t => t.status === 'blocked').length };
   const progress = taskStats.total > 0 ? Math.round((taskStats.done / taskStats.total) * 100) : 0;
@@ -88,12 +98,12 @@ export default function ProjectDetail() {
   const totalEstimated = tasks.reduce((s, t) => s + (t.estimated_hours || 0), 0);
 
   const linkedBudgets = budgets.filter(b => b.project_id === projectId);
-  const totalBudget = (project.budget || 0) + linkedBudgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
+  const totalBudget = (project?.budget || 0) + linkedBudgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
   const spent = expenses.filter(e => (e.project_id === projectId || linkedBudgets.map(b => b.id).includes(e.budget_id)) && e.status === 'paid').reduce((sum, e) => sum + (e.amount || 0), 0);
   const budgetProgress = totalBudget > 0 ? Math.min(Math.round((spent / totalBudget) * 100), 100) : 0;
 
-  const handleAddMember = (e) => { e.preventDefault(); const fd = new FormData(e.target); updateProjectMutation.mutate({ team_member_ids: [...(project.team_member_ids || []), fd.get('user_id')].filter((v, i, a) => a.indexOf(v) === i) }); };
-  const handleRemoveMember = (userId) => updateProjectMutation.mutate({ team_member_ids: (project.team_member_ids || []).filter(id => id !== userId) });
+  const handleAddMember = (e) => { e.preventDefault(); const fd = new FormData(e.target); updateProjectMutation.mutate({ team_member_ids: [...(project?.team_member_ids || []), fd.get('user_id')].filter((v, i, a) => a.indexOf(v) === i) }); };
+  const handleRemoveMember = (userId) => updateProjectMutation.mutate({ team_member_ids: (project?.team_member_ids || []).filter(id => id !== userId) });
 
   const handleMilestoneSubmit = (e) => {
     e.preventDefault();
@@ -113,7 +123,7 @@ export default function ProjectDetail() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild><Link to={createPageUrl('Projects')}><ArrowLeft className="h-5 w-5" /></Link></Button>
-        <div className="flex-1"><div className="flex items-center gap-3"><h1 className="text-2xl font-semibold text-slate-900">{project.name}</h1><StatusBadge status={project.status} /></div><p className="text-slate-500">{project.code}</p></div>
+        <div className="flex-1"><div className="flex items-center gap-3"><h1 className="text-2xl font-semibold text-slate-900">{project?.name}</h1><StatusBadge status={project?.status} /></div><p className="text-slate-500">{project?.code}</p></div>
         <Button variant="outline" asChild><Link to={createPageUrl(`Tasks?project=${projectId}`)}><ListTodo className="h-4 w-4 mr-2" /> View Tasks</Link></Button>
       </div>
 
@@ -140,13 +150,13 @@ export default function ProjectDetail() {
             <Card className="lg:col-span-2 border-0 shadow-sm">
               <CardHeader><CardTitle>Project Details</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                {project.description && (<div><p className="text-sm font-medium text-slate-500 mb-1">Description</p><p className="text-slate-700">{project.description}</p></div>)}
+                {project?.description && (<div><p className="text-sm font-medium text-slate-500 mb-1">Description</p><p className="text-slate-700">{project?.description}</p></div>)}
                 <div className="grid grid-cols-2 gap-4">
-                  <div><p className="text-sm font-medium text-slate-500 mb-1">Type</p><Badge variant="outline" className="capitalize">{project.project_type}</Badge></div>
-                  <div><p className="text-sm font-medium text-slate-500 mb-1">Priority</p><StatusBadge status={project.priority} /></div>
-                  <div><p className="text-sm font-medium text-slate-500 mb-1">Start Date</p><p className="text-slate-700">{project.start_date ? format(new Date(project.start_date), 'MMM d, yyyy') : 'Not set'}</p></div>
-                  <div><p className="text-sm font-medium text-slate-500 mb-1">Target Date</p><p className="text-slate-700">{project.target_date ? format(new Date(project.target_date), 'MMM d, yyyy') : 'Not set'}</p></div>
-                  <div><p className="text-sm font-medium text-slate-500 mb-1">Combined Budget</p><p className="text-slate-700">{totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : 'Not set'}</p></div>
+                  <div><p className="text-sm font-medium text-slate-500 mb-1">Type</p><Badge variant="outline" className="capitalize">{project?.project_type}</Badge></div>
+                  <div><p className="text-sm font-medium text-slate-500 mb-1">Priority</p><StatusBadge status={project?.priority} /></div>
+                  <div><p className="text-sm font-medium text-slate-500 mb-1">Start Date</p><p className="text-slate-700">{project?.start_date ? format(new Date(project.start_date), 'MMM d, yyyy') : 'Not set'}</p></div>
+                  <div><p className="text-sm font-medium text-slate-500 mb-1">Target Date</p><p className="text-slate-700">{project?.target_date ? format(new Date(project.target_date), 'MMM d, yyyy') : 'Not set'}</p></div>
+                  <div><p className="text-sm font-medium text-slate-500 mb-1">Budget</p><p className="text-slate-700">{totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : 'Not set'}</p></div>
                   <div><p className="text-sm font-medium text-slate-500 mb-1">Lead</p>{lead ? (<div className="flex items-center gap-2"><Avatar name={lead.full_name} email={lead.email} size="sm" /><span className="text-slate-700">{lead.full_name}</span></div>) : <p className="text-slate-500">Not assigned</p>}</div>
                 </div>
               </CardContent>
@@ -275,7 +285,7 @@ export default function ProjectDetail() {
       </Tabs>
 
       <Dialog open={memberDialog} onOpenChange={setMemberDialog}>
-        <DialogContent className="max-w-md"><DialogHeader><DialogTitle>Add Team Member</DialogTitle></DialogHeader><form onSubmit={handleAddMember} className="space-y-4"><div className="space-y-2"><Label htmlFor="user_id">Select User</Label><Select name="user_id" required><SelectTrigger><SelectValue placeholder="Select a user" /></SelectTrigger><SelectContent>{users.filter(u => !(project.team_member_ids || []).includes(u.id)).map(user => (<SelectItem key={user.id} value={user.id}>{user.full_name}</SelectItem>))}</SelectContent></Select></div><DialogFooter><Button type="button" variant="outline" onClick={() => setMemberDialog(false)}>Cancel</Button><Button type="submit">Add Member</Button></DialogFooter></form></DialogContent>
+        <DialogContent className="max-w-md"><DialogHeader><DialogTitle>Add Team Member</DialogTitle></DialogHeader><form onSubmit={handleAddMember} className="space-y-4"><div className="space-y-2"><Label htmlFor="user_id">Select User</Label><Select name="user_id" required><SelectTrigger><SelectValue placeholder="Select a user" /></SelectTrigger><SelectContent>{users.filter(u => !(project?.team_member_ids || []).includes(u.id)).map(user => (<SelectItem key={user.id} value={user.id}>{user.full_name}</SelectItem>))}</SelectContent></Select></div><DialogFooter><Button type="button" variant="outline" onClick={() => setMemberDialog(false)}>Cancel</Button><Button type="submit">Add Member</Button></DialogFooter></form></DialogContent>
       </Dialog>
 
       <Dialog open={milestoneDialog} onOpenChange={setMilestoneDialog}>

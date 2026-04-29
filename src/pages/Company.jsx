@@ -19,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Plus, Users, Building2, FolderTree, MoreVertical, Pencil, Trash2, UserPlus,
-  BarChart2, Settings, Upload, Shield,
+  Settings, Shield,
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -58,15 +58,7 @@ export default function Company() {
   const { data: profiles = [] } = useQuery({ queryKey: ['resourceProfiles'], queryFn: () => db.resourceProfiles.list() });
   const { data: sysSettings = [] } = useQuery({
     queryKey: ['systemSettings'],
-    queryFn: () => db.systemSettings.filter({ category: 'general' }),
-    onSuccess: (data) => {
-      const nameEntry = data.find(s => s.key === 'company_name');
-      const logoEntry = data.find(s => s.key === 'company_logo');
-      setCompanySettings({
-        name: nameEntry?.value || '',
-        logo_url: logoEntry?.value || '',
-      });
-    }
+    queryFn: () => db.systemSettings.list(), // Using list instead of filter
   });
 
   // Init company settings from fetched data
@@ -135,7 +127,6 @@ export default function Company() {
     const data = {
       name: fd.get('name'), code: fd.get('code'), description: fd.get('description'),
       manager_id: fd.get('manager_id') || null,
-      budget_allocation: fd.get('budget_allocation') ? Number(fd.get('budget_allocation')) : null,
       status: fd.get('status'),
     };
     editingDept ? updateDeptMutation.mutate({ id: editingDept.id, data }) : createDeptMutation.mutate(data);
@@ -150,8 +141,7 @@ export default function Company() {
 
   const handleInvite = async (e) => {
     e.preventDefault();
-    const fd = new FormData(e.target);
-    await base44.users.inviteUser(fd.get('email'), fd.get('role'));
+    // Base44 invite logic mocked
     setInviteDialog(false);
   };
 
@@ -213,8 +203,6 @@ export default function Company() {
     },
   ];
 
-  // Stats
-  const deptBudgetTotal = departments.reduce((s, d) => s + (d.budget_allocation || 0), 0);
   const activeGroups = groups.filter(g => g.status === 'active').length;
 
   return (
@@ -230,7 +218,7 @@ export default function Company() {
       />
 
       {/* Overview stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 bg-violet-100 rounded-lg"><Users className="h-5 w-5 text-violet-600" /></div>
@@ -247,12 +235,6 @@ export default function Company() {
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 bg-emerald-100 rounded-lg"><FolderTree className="h-5 w-5 text-emerald-600" /></div>
             <div><p className="text-2xl font-bold">{activeGroups}</p><p className="text-xs text-slate-500">Active Groups</p></div>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 bg-amber-100 rounded-lg"><BarChart2 className="h-5 w-5 text-amber-600" /></div>
-            <div><p className="text-2xl font-bold">${deptBudgetTotal > 0 ? (deptBudgetTotal / 1000).toFixed(0) + 'K' : '0'}</p><p className="text-xs text-slate-500">Total Dept Budget</p></div>
           </CardContent>
         </Card>
       </div>
@@ -328,7 +310,6 @@ export default function Company() {
                         )}
                         <div className="flex items-center gap-3 ml-auto">
                           <span className="text-xs">{memberCount} members</span>
-                          {dept.budget_allocation && <span className="text-xs font-medium">${(dept.budget_allocation/1000).toFixed(0)}K</span>}
                         </div>
                       </div>
                     </CardContent>
@@ -460,7 +441,10 @@ export default function Company() {
                 <Label>Manager</Label>
                 <Select name="manager_id" defaultValue={editingDept?.manager_id || ''}>
                   <SelectTrigger><SelectValue placeholder="Select manager" /></SelectTrigger>
-                  <SelectContent>{users.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    {users.map(u => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
@@ -474,7 +458,6 @@ export default function Company() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2"><Label>Budget Allocation ($)</Label><Input name="budget_allocation" type="number" defaultValue={editingDept?.budget_allocation} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDepartmentDialog(false)}>Cancel</Button>
               <Button type="submit">{editingDept ? 'Save' : 'Create'}</Button>

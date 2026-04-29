@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -44,6 +45,8 @@ import {
   EyeOff,
   RefreshCw,
   Download,
+  Users,
+  Link,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -53,6 +56,7 @@ import {
 } from "../components/ui/dropdown-menu";
 import { format } from 'date-fns';
 import { cn } from "../lib/utils";
+import { Checkbox } from '@/components/ui/checkbox';
 
 const SETTING_CATEGORIES = [
   { id: 'general', name: 'General', icon: Settings },
@@ -64,148 +68,129 @@ const SETTING_CATEGORIES = [
 ];
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState('settings');
+  const [activeTab, setActiveTab] = useState('roles');
   const [search, setSearch] = useState('');
   const [settingDialog, setSettingDialog] = useState(false);
   const [editingSetting, setEditingSetting] = useState(null);
+  const [editingRole, setEditingRole] = useState(null);
   const [showSecrets, setShowSecrets] = useState({});
   const queryClient = useQueryClient();
 
-  const { data: settings = [], isLoading: settingsLoading } = useQuery({
-    queryKey: ['systemSettings'],
-    queryFn: () => db.systemSettings.list(),
-  });
+  // Data Queries
+  const { data: settings = [], isLoading: settingsLoading } = useQuery({ queryKey: ['systemSettings'], queryFn: () => db.systemSettings.list() });
+  const { data: auditLogs = [], isLoading: logsLoading } = useQuery({ queryKey: ['auditLogs'], queryFn: () => db.auditLogs.list() });
+  const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: () => db.users.list() });
+  const { data: roles = [], isLoading: rolesLoading } = useQuery({ queryKey: ['roles'], queryFn: () => db.roles.list() });
+  const { data: permissions = [], isLoading: permissionsLoading } = useQuery({ queryKey: ['permissions'], queryFn: () => db.permissions.list() });
+  const { data: ldapGroups = [], isLoading: ldapLoading } = useQuery({ queryKey: ['ldapGroups'], queryFn: () => db.ldapGroups.list() });
 
-  const { data: auditLogs = [], isLoading: logsLoading } = useQuery({
-    queryKey: ['auditLogs'],
-    queryFn: () => db.auditLogs.list(),
-  });
-
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => db.users.list(),
-  });
-
-  const createSettingMutation = useMutation({
-    mutationFn: (data) => db.systemSettings.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['systemSettings'] });
-      setSettingDialog(false);
-      setEditingSetting(null);
-    },
-  });
-
-  const updateSettingMutation = useMutation({
-    mutationFn: ({ id, data }) => db.systemSettings.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['systemSettings'] });
-      setSettingDialog(false);
-      setEditingSetting(null);
-    },
-  });
-
-  const deleteSettingMutation = useMutation({
-    mutationFn: (id) => db.systemSettings.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['systemSettings'] }),
-  });
+  // Mutations
+  const createSettingMutation = useMutation({ mutationFn: (data) => db.systemSettings.create(data), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['systemSettings'] }) });
+  const updateSettingMutation = useMutation({ mutationFn: ({ id, data }) => db.systemSettings.update(id, data), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['systemSettings'] }) });
+  const deleteSettingMutation = useMutation({ mutationFn: (id) => db.systemSettings.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['systemSettings'] }) });
+  const updateRoleMutation = useMutation({ mutationFn: ({ id, data }) => db.roles.update(id, data), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['roles'] }) });
 
   const getUserById = (id) => users.find(u => u.id === id);
 
   const handleSettingSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    data.is_secret = data.is_secret === 'on';
+    if (editingSetting) updateSettingMutation.mutate({ id: editingSetting.id, data }, { onSuccess: () => setSettingDialog(false) });
+    else createSettingMutation.mutate(data, { onSuccess: () => setSettingDialog(false) });
+  };
+
+  const handleRoleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const permissionIds = permissions.filter(p => formData.get(`perm-${p.id}`) === 'on').map(p => p.id);
+    const ldapGroupId = formData.get('ldap_group_id');
+    
     const data = {
-      key: formData.get('key'),
-      value: formData.get('value'),
-      category: formData.get('category'),
+      name: formData.get('name'),
       description: formData.get('description'),
-      is_secret: formData.get('is_secret') === 'on',
+      ldap_group_id: ldapGroupId === 'unlinked' ? null : ldapGroupId,
+      permission_ids: permissionIds,
+      default_hourly_rate: formData.get('default_hourly_rate') ? parseFloat(formData.get('default_hourly_rate')) : 0,
     };
-
-    if (editingSetting) {
-      updateSettingMutation.mutate({ id: editingSetting.id, data });
-    } else {
-      createSettingMutation.mutate(data);
-    }
+    updateRoleMutation.mutate({ id: editingRole.id, data }, { onSuccess: () => setEditingRole(null) });
   };
 
-  const toggleShowSecret = (id) => {
-    setShowSecrets(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  const toggleShowSecret = (id) => setShowSecrets(prev => ({ ...prev, [id]: !prev[id] }));
 
   const auditLogColumns = [
-    {
-      header: 'Action',
-      render: (log) => (
-        <Badge variant="outline" className="capitalize">{log.action?.replace(/_/g, ' ')}</Badge>
-      ),
-    },
-    {
-      header: 'Entity',
-      render: (log) => (
-        <div>
-          <p className="font-medium">{log.entity_type}</p>
-          <p className="text-xs text-slate-500 font-mono">{log.entity_id?.slice(0, 8)}...</p>
-        </div>
-      ),
-    },
-    {
-      header: 'User',
-      render: (log) => {
-        const user = getUserById(log.user_id);
-        return user ? (
-          <div className="flex items-center gap-2">
-            <Avatar name={user.full_name} email={user.email} size="sm" />
-            <span className="text-sm">{user.full_name}</span>
-          </div>
-        ) : (
-          <span className="text-slate-500">{log.user_email || 'System'}</span>
-        );
-      },
-    },
-    {
-      header: 'Time',
-      render: (log) => (
-        <span className="text-sm text-slate-600">
-          {log.created_date ? format(new Date(log.created_date), 'MMM d, HH:mm') : '-'}
-        </span>
-      ),
-    },
-    {
-      header: 'IP',
-      render: (log) => (
-        <span className="text-sm text-slate-500 font-mono">{log.ip_address || '-'}</span>
-      ),
-    },
+    { header: 'Action', render: (log) => <Badge variant="outline" className="capitalize">{log.action?.replace(/_/g, ' ')}</Badge> },
+    { header: 'Entity', render: (log) => <div><p className="font-medium">{log.entity_type}</p><p className="text-xs text-slate-500 font-mono">{log.entity_id?.slice(0, 8)}...</p></div> },
+    { header: 'User', render: (log) => { const user = getUserById(log.user_id); return user ? <div className="flex items-center gap-2"><Avatar name={user.full_name} email={user.email} size="sm" /><span className="text-sm">{user.full_name}</span></div> : <span className="text-slate-500">{log.user_email || 'System'}</span>; } },
+    { header: 'Time', render: (log) => <span className="text-sm text-slate-600">{log.created_date ? format(new Date(log.created_date), 'MMM d, HH:mm') : '-'}</span> },
+    { header: 'IP', render: (log) => <span className="text-sm text-slate-500 font-mono">{log.ip_address || '-'}</span> },
   ];
 
-  const filteredLogs = auditLogs.filter(log =>
-    log.action?.toLowerCase().includes(search.toLowerCase()) ||
-    log.entity_type?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredLogs = auditLogs.filter(log => log.action?.toLowerCase().includes(search.toLowerCase()) || log.entity_type?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Admin Panel"
-        subtitle="System settings, audit logs, and administration"
-      />
+      <PageHeader title="Admin Panel" subtitle="System settings, roles, and administration" />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="settings" className="gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-2">
-            <FileText className="h-4 w-4" />
-            Audit Log
-          </TabsTrigger>
-          <TabsTrigger value="ldap" className="gap-2">
-            <Server className="h-4 w-4" />
-            LDAP Config
-          </TabsTrigger>
+          <TabsTrigger value="roles" className="gap-2"><Shield className="h-4 w-4" /> Roles & Permissions</TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2"><Settings className="h-4 w-4" /> Settings</TabsTrigger>
+          <TabsTrigger value="audit" className="gap-2"><FileText className="h-4 w-4" /> Audit Log</TabsTrigger>
+          <TabsTrigger value="ldap" className="gap-2"><Server className="h-4 w-4" /> LDAP Config</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="roles" className="mt-6">
+          <Card className="border-0 shadow-sm">
+            <CardHeader>
+              <CardTitle>Role & Rate Management</CardTitle>
+              <CardDescription>Define roles, set their default billable rates, and map them to LDAP groups and permissions.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y divide-slate-100">
+                {rolesLoading ? (
+                  [...Array(4)].map((_, i) => <Skeleton key={i} className="h-20" />)
+                ) : (
+                  roles.map(role => {
+                    const mappedGroup = ldapGroups.find(g => g.id === role.ldap_group_id);
+                    return (
+                      <div key={role.id} className="py-4 flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-slate-900 text-lg">{role.name}</h3>
+                          <p className="text-sm text-slate-500 mt-1">{role.description}</p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                              <Shield className="h-4 w-4" />
+                              <span>{role.permission_ids?.length || 0} Permissions</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                              <Link className="h-4 w-4" />
+                              {mappedGroup ? (
+                                <span className="font-medium">{mappedGroup.name}</span>
+                              ) : (
+                                <span className="text-slate-400">Not Linked</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                              <span className="font-mono bg-slate-100 px-1.5 rounded text-xs border border-slate-200">
+                                ${role.default_hourly_rate || 0}/hr
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button variant="outline" onClick={() => setEditingRole(role)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit Role
+                        </Button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="settings" className="mt-6">
           <div className="flex justify-end mb-4">
@@ -216,82 +201,82 @@ export default function Admin() {
           </div>
 
           {settingsLoading ? (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40" />)}
-            </div>
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40" />)}
+              </div>
           ) : (
-            <div className="space-y-6">
-              {SETTING_CATEGORIES.map(category => {
-                const categorySettings = settings.filter(s => s.category === category.id);
-                if (categorySettings.length === 0) return null;
+              <div className="space-y-6">
+                {SETTING_CATEGORIES.map(category => {
+                  const categorySettings = settings.filter(s => s.category === category.id);
+                  if (categorySettings.length === 0) return null;
 
-                return (
-                  <Card key={category.id} className="border-0 shadow-sm">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center gap-2">
-                        <category.icon className="h-5 w-5 text-slate-600" />
-                        <CardTitle className="text-lg">{category.name} Settings</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="divide-y divide-slate-100">
-                        {categorySettings.map(setting => (
-                          <div key={setting.id} className="py-4 flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-slate-900">{setting.key}</p>
-                                {setting.is_secret && (
-                                  <Badge variant="secondary" className="text-xs">Secret</Badge>
-                                )}
-                              </div>
-                              {setting.description && (
-                                <p className="text-sm text-slate-500 mt-1">{setting.description}</p>
-                              )}
-                              <div className="flex items-center gap-2 mt-2">
-                                {setting.is_secret ? (
-                                  <>
-                                    <code className="text-sm bg-slate-100 px-2 py-1 rounded">
-                                      {showSecrets[setting.id] ? setting.value : '••••••••'}
-                                    </code>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => toggleShowSecret(setting.id)}
-                                    >
-                                      {showSecrets[setting.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </Button>
-                                  </>
-                                ) : (
-                                  <code className="text-sm bg-slate-100 px-2 py-1 rounded">{setting.value}</code>
-                                )}
-                              </div>
-                            </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => { setEditingSetting(setting); setSettingDialog(true); }}>
-                                  <Pencil className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600" onClick={() => deleteSettingMutation.mutate(setting.id)}>
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                  return (
+                      <Card key={category.id} className="border-0 shadow-sm">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center gap-2">
+                            <category.icon className="h-5 w-5 text-slate-600" />
+                            <CardTitle className="text-lg">{category.name} Settings</CardTitle>
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="divide-y divide-slate-100">
+                            {categorySettings.map(setting => (
+                                <div key={setting.id} className="py-4 flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-slate-900">{setting.key}</p>
+                                      {setting.is_secret && (
+                                          <Badge variant="secondary" className="text-xs">Secret</Badge>
+                                      )}
+                                    </div>
+                                    {setting.description && (
+                                        <p className="text-sm text-slate-500 mt-1">{setting.description}</p>
+                                    )}
+                                    <div className="flex items-center gap-2 mt-2">
+                                      {setting.is_secret ? (
+                                          <>
+                                            <code className="text-sm bg-slate-100 px-2 py-1 rounded">
+                                              {showSecrets[setting.id] ? setting.value : '••••••••'}
+                                            </code>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7"
+                                                onClick={() => toggleShowSecret(setting.id)}
+                                            >
+                                              {showSecrets[setting.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            </Button>
+                                          </>
+                                      ) : (
+                                          <code className="text-sm bg-slate-100 px-2 py-1 rounded">{setting.value}</code>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => { setEditingSetting(setting); setSettingDialog(true); }}>
+                                        <Pencil className="h-4 w-4 mr-2" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem className="text-red-600" onClick={() => deleteSettingMutation.mutate(setting.id)}>
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                  );
+                })}
+              </div>
           )}
         </TabsContent>
 
@@ -307,10 +292,10 @@ export default function Admin() {
           <Card className="border-0 shadow-sm">
             <CardContent className="p-0">
               <DataTable
-                columns={auditLogColumns}
-                data={filteredLogs}
-                isLoading={logsLoading}
-                emptyMessage="No audit logs found"
+                  columns={auditLogColumns}
+                  data={filteredLogs}
+                  isLoading={logsLoading}
+                  emptyMessage="No audit logs found"
               />
             </CardContent>
           </Card>
@@ -434,6 +419,69 @@ export default function Admin() {
         </TabsContent>
       </Tabs>
 
+      {/* Role Editing Dialog */}
+      <Dialog open={!!editingRole} onOpenChange={() => setEditingRole(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Role: {editingRole?.name}</DialogTitle>
+            <DialogDescription>{editingRole?.description}</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleRoleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Role Name</Label>
+                  <Input id="name" name="name" defaultValue={editingRole?.name} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea id="description" name="description" defaultValue={editingRole?.description} rows={3} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="default_hourly_rate">Default Hourly Rate ($)</Label>
+                  <Input id="default_hourly_rate" name="default_hourly_rate" type="number" step="0.01" min="0" defaultValue={editingRole?.default_hourly_rate || ''} placeholder="e.g. 150.00" />
+                  <p className="text-xs text-slate-500">This rate applies to all users inheriting this role unless overridden by a specific resource profile.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ldap_group_id">Link to LDAP Group</Label>
+                  <Select name="ldap_group_id" defaultValue={editingRole?.ldap_group_id || 'unlinked'}>
+                    <SelectTrigger><SelectValue placeholder="Select an LDAP group" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unlinked">None</SelectItem>
+                      {ldapGroups.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Permissions</Label>
+                <ScrollArea className="h-64 border rounded-md p-4">
+                  <div className="space-y-3">
+                    {permissionsLoading ? <Skeleton className="h-40" /> : permissions.map(perm => (
+                      <div key={perm.id} className="flex items-center gap-3">
+                        <Checkbox
+                          id={`perm-${perm.id}`}
+                          name={`perm-${perm.id}`}
+                          defaultChecked={editingRole?.permission_ids?.includes(perm.id)}
+                        />
+                        <div>
+                          <Label htmlFor={`perm-${perm.id}`} className="font-medium">{perm.name}</Label>
+                          <p className="text-xs text-slate-500">{perm.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingRole(null)}>Cancel</Button>
+              <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Setting Dialog */}
       <Dialog open={settingDialog} onOpenChange={setSettingDialog}>
         <DialogContent className="max-w-md">
@@ -455,7 +503,7 @@ export default function Admin() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SETTING_CATEGORIES.map(cat => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

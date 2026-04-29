@@ -4,7 +4,7 @@ const USE_MOCK_DATA = true; // Set to false when Express backend is ready
 // --- MOCK DATABASE SCHEMAS ALIGNED WITH GITHUB ENTITIES ---
 let MOCK_DB = {
   users: [
-    { id: 'u1', full_name: 'Admin User', email: 'admin@example.com' },
+    { id: 'u1', full_name: 'Admin User', email: 'admin@example.com', role_ids: ['r1'] }, // Correctly assign role ID
     { id: 'u2', full_name: 'John Developer', email: 'john@example.com' },
     { id: 'u3', full_name: 'Sarah Designer', email: 'sarah@example.com' }
   ],
@@ -17,7 +17,7 @@ let MOCK_DB = {
       id: 'p1', name: 'Tinyverse', code: 'TVRSE', description: 'Top-down puzzle game', 
       status: 'production', priority: 'high', project_type: 'game', lead_id: 'u1', 
       department_id: 'd1', team_member_ids: ['u1', 'u2', 'u3'], start_date: '2026-01-01', 
-      target_date: '2026-12-31', budget: 150000, spent: 4500, git_repos: [] 
+      target_date: '2026-12-31', git_repos: []
     }
   ],
   milestones: [
@@ -31,26 +31,26 @@ let MOCK_DB = {
       id: 't1', title: 'Setup Authentication API', description: 'Implement JWT auth', 
       project_id: 'p1', sprint_id: 's1', milestone_id: 'm1', status: 'in_progress', 
       priority: 'high', task_type: 'feature', assignee_id: 'u2', reporter_id: 'u1', 
-      estimated_hours: 8, logged_hours: 4, due_date: '2026-03-10', parent_task_id: null,
+      estimated_hours: 8, logged_hours: 4, start_date: '2026-03-06', due_date: '2026-03-10', parent_task_id: 't3',
       labels: ['backend', 'security'], git_branch: 'feat/auth', git_commits: [], order: 1
     },
     { 
       id: 't2', title: 'Player Movement Controller', description: 'C# Unity movement script', 
       project_id: 'p1', sprint_id: 's1', status: 'todo', priority: 'critical', 
       task_type: 'task', assignee_id: 'u2', reporter_id: 'u1', estimated_hours: 12, 
-      logged_hours: 0, due_date: '2026-03-12', parent_task_id: null, labels: ['unity', 'core'], order: 2
+      logged_hours: 0, start_date: '2026-03-11', due_date: '2026-03-15', parent_task_id: 't3', labels: ['unity', 'core'], order: 2
     },
     {
       id: 't3', title: 'Game Epic', description: 'All game tasks', 
       project_id: 'p1', status: 'in_progress', priority: 'medium', 
-      task_type: 'epic', estimated_hours: 100, logged_hours: 4
+      task_type: 'epic', estimated_hours: 100, logged_hours: 4, parent_task_id: null
     }
   ],
   taskDependencies: [
     { task_id: 't2', depends_on_task_id: 't1', dependency_type: 'finish_to_start' }
   ],
   timeLogs: [
-    { id: 'log1', task_id: 't1', project_id: 'p1', user_id: 'u2', hours: 4, date: '2026-03-05', description: 'Initial setup of JWT tokens', billable: true }
+    { id: 'log1', task_id: 't1', project_id: 'p1', user_id: 'u2', hours: 4, date: '2026-03-05', description: 'Initial setup of JWT tokens', billable: true, applied_hourly_rate: 85 }
   ],
   resourceProfiles: [
     { 
@@ -62,7 +62,7 @@ let MOCK_DB = {
     { id: 'repo1', name: 'tinyverse-client', full_name: 'troller2705/tinyverse-client', integration_id: 'git1', project_id: 'p1', url: 'https://github.com', default_branch: 'main', is_private: true, language: 'C#' }
   ],
   budgets: [
-    { id: 'b1', name: 'Q1 Development', fiscal_year: 2026, project_id: 'p1', department_id: 'd1', total_amount: 50000, allocated_amount: 50000, spent_amount: 1500, status: 'active' }
+    { id: 'b1', name: 'Q1 Development', fiscal_year: 2026, project_id: 'p1', department_id: 'd1', total_amount: 5000000, status: 'active' }
   ],
   budgetCategories: [
     { id: 'c1', name: 'Infrastructure', code: 'INFRA' },
@@ -71,9 +71,8 @@ let MOCK_DB = {
   expenses: [
     { id: 'e1', description: 'AWS Hosting', amount: 1500, budget_id: 'b1', category_id: 'c1', project_id: 'p1', vendor: 'Amazon', date: '2026-03-01', status: 'paid', payment_method: 'credit_card' }
   ],
-  // Legacy entities for RBAC/UI functionality
   roles: [
-    { id: 'r1', name: 'Admin', code: 'admin' }
+    { id: 'r1', name: 'Admin', code: 'admin', permission_ids: ['perm1', 'perm2'] }
   ],
   gitIntegrations: [
     { id: 'git1', name: 'GitHub Sync', provider: 'github' }
@@ -88,7 +87,8 @@ let MOCK_DB = {
     { id: 'g1', name: 'Developers', cn: 'cn=developers', group_type: 'department', status: 'active', member_ids: ['u2'] }
   ],
   permissions: [
-    { id: 'perm1', name: 'Create Tasks', code: 'task.create', category: 'task', description: 'Allows creating new tasks' }
+    { id: 'perm1', name: 'Create Tasks', code: 'task.create', category: 'task', description: 'Allows creating new tasks' },
+    { id: 'perm2', name: 'View Financials', code: 'finance.view', category: 'finance', description: 'Allows viewing budget and spend metrics' }
   ],
   projectAccess: [
     { id: 'pa1', project_id: 'p1', user_id: 'u2', access_level: 'contribute' }
@@ -99,6 +99,15 @@ let MOCK_DB = {
   auditLogs: [
     { id: 'al1', action: 'user_login', entity_type: 'User', entity_id: 'u1', user_id: 'u1', created_date: new Date().toISOString(), ip_address: '192.168.1.1' }
   ],
+  workflowRules: [
+    { id: 'wr1', name: 'Auto-Assign QA', description: 'Assign QA when status is ready_for_testing', is_active: true, trigger_event: 'status_change', trigger_condition: { to_status: 'ready_for_testing' }, action_type: 'assign_to_user', action_config: { user_id: 'u1' }, execution_count: 5 }
+  ],
+  approvalRequests: [
+    { id: 'ar1', task_id: 't1', title: 'Approve Architecture', status: 'pending', requester_id: 'u2', approver_ids: ['u1'], created_date: '2026-04-01' }
+  ],
+  projectTemplates: [
+    { id: 'pt1', name: 'Standard Software Dev', description: 'Agile dev setup', project_type: 'software', tags: ['agile', 'dev'], tasks: [{ ref_id: 'pt_t1', title: 'Setup Repo', task_type: 'task', estimated_hours: 2, labels: ['infra'] }], dependencies: [] }
+  ]
 };
 
 // --- MOCK INTERCEPTOR ---
@@ -115,7 +124,7 @@ async function mockFetch(endpoint, options) {
   const collectionName = collectionMatch[1].replace(/-([a-z])/g, g => g[1].toUpperCase());
   const id = collectionMatch[2];
 
-  if (endpoint === '/auth/me') return { user: MOCK_DB.users[0] };
+  if (endpoint === '/auth/me') return MOCK_DB.users[0]; // Return the user object directly
   if (endpoint === '/auth/login') return { token: 'mock-token-123', user: MOCK_DB.users[0] };
 
   const collection = MOCK_DB[collectionName];
@@ -198,4 +207,7 @@ export const db = {
   projectAccess: createEndpoints('/project-access'),
   systemSettings: createEndpoints('/system-settings'),
   auditLogs: createEndpoints('/audit-logs'),
+  workflowRules: createEndpoints('/workflow-rules'),
+  approvalRequests: createEndpoints('/approval-requests'),
+  projectTemplates: createEndpoints('/project-templates'),
 };

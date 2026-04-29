@@ -23,10 +23,13 @@ export function usePermissions() {
         }
 
         // Load roles and permissions
-        const [rolesData, accessData] = await Promise.all([
+        const [rolesData, allAccessData, allPermissionsData] = await Promise.all([
           db.roles.list(),
-          db.projectAccess.filter({ user_id: currentUser.id }),
+          db.projectAccess.list(),
+          db.permissions.list()
         ]);
+        
+        const accessData = allAccessData.filter(a => a.user_id === currentUser.id);
 
         setRoles(rolesData);
         setProjectAccess(accessData);
@@ -34,10 +37,21 @@ export function usePermissions() {
         // Collect all permissions from roles and project access
         const allPermissions = new Set();
         
-        // Add permissions from user's role
+        // Add permissions directly mapped to the user (e.g., from mock /auth/me payload)
+        if (currentUser.permissions) {
+           currentUser.permissions.forEach(p => allPermissions.add(p));
+        }
+        
+        // Add permissions from user's assigned roles
         const userRoles = rolesData.filter(r => currentUser.role_ids?.includes(r.id));
         userRoles.forEach(role => {
-          role.permission_ids?.forEach(p => allPermissions.add(p));
+          role.permission_ids?.forEach(permId => {
+            // Find the actual permission code (e.g., 'finance.view') using the ID ('perm2')
+            const permObj = allPermissionsData.find(p => p.id === permId);
+            if (permObj) {
+              allPermissions.add(permObj.code);
+            }
+          });
         });
 
         // Add permissions from project access

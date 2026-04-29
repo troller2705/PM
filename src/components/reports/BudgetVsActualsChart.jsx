@@ -3,7 +3,6 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -61,7 +60,18 @@ export default function BudgetVsActualsChart({ budgets = [], expenses = [], proj
   );
   
   const overallVariance = totals.budget - totals.actual;
-  const overallVariancePct = totals.budget > 0 ? Math.abs(Math.round((overallVariance / totals.budget) * 100)) : 0;
+
+  // Custom formatter function that handles numbers dynamically
+  // If the value is >= 1M, format as $1.5M. If >= 1K, format as $150k. Otherwise, format as $500.
+  const customYAxisFormatter = (value) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+    }
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(0)}k`;
+    }
+    return `$${value}`;
+  };
 
   return (
     <Card className="border-0 shadow-sm h-full">
@@ -80,7 +90,13 @@ export default function BudgetVsActualsChart({ budgets = [], expenses = [], proj
               <BarChart data={data} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} axisLine={false} tickLine={false} />
+                <YAxis 
+                  tick={{ fontSize: 11 }} 
+                  tickFormatter={customYAxisFormatter} 
+                  axisLine={false} 
+                  tickLine={false} 
+                  width={60}
+                />
                 <Tooltip 
                   formatter={(val) => `$${val.toLocaleString()}`}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
@@ -90,7 +106,7 @@ export default function BudgetVsActualsChart({ budgets = [], expenses = [], proj
                 <Bar dataKey="budget" name="Budget" fill="#c4b5fd" radius={[4, 4, 0, 0]} maxBarSize={50} />
                 <Bar dataKey="actual" name="Actual" radius={[4, 4, 0, 0]} maxBarSize={50}>
                   {data.map((entry, index) => (
-                    <Cell key={index} fill={entry.actual > entry.budget ? '#f87171' : '#34d399'} />
+                    <Cell key={`cell-${index}`} fill={entry.actual > entry.budget ? '#f87171' : '#34d399'} />
                   ))}
                 </Bar>
               </BarChart>

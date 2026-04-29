@@ -16,7 +16,6 @@ import { Switch } from "../components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
 import { Plus, DollarSign, Wallet, MoreVertical, Pencil, Trash2, Check, X, Tag, Briefcase, Flame, Users } from 'lucide-react';
@@ -27,7 +26,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 
 const BUDGET_STATUSES = ['draft', 'pending_approval', 'approved', 'active', 'frozen', 'closed'];
 const EXPENSE_STATUSES = ['pending', 'approved', 'rejected', 'paid', 'cancelled'];
-const PAYMENT_METHODS = ['credit_card', 'bank_transfer', 'cash', 'invoice', 'other'];
 
 export default function Budget() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -35,12 +33,10 @@ export default function Budget() {
   
   const [budgetDialog, setBudgetDialog] = useState(false);
   const [expenseDialog, setExpenseDialog] = useState(false);
-  const [categoryDialog, setCategoryDialog] = useState(false);
   const [rateCardDialog, setRateCardDialog] = useState(false);
   
   const [editingBudget, setEditingBudget] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
-  const [editingCategory, setEditingCategory] = useState(null);
   const [editingRateCard, setEditingRateCard] = useState(null);
   
   const queryClient = useQueryClient();
@@ -50,7 +46,7 @@ export default function Budget() {
   const { data: categories = [] } = useQuery({ queryKey: ['budgetCategories'], queryFn: () => db.budgetCategories.list() });
   const { data: projects = [] } = useQuery({ queryKey: ['projects'], queryFn: () => db.projects.list() });
   const { data: roles = [] } = useQuery({ queryKey: ['roles'], queryFn: () => db.roles.list() });
-  const { data: rateCards = [], isLoading: rateCardsLoading } = useQuery({ queryKey: ['rateCards'], queryFn: () => db.rateCards.list() });
+  const { data: rateCards = [], isLoading: rateCardsLoading } = useQuery({ queryKey: ['rateCards'], queryFn: () => db.rateCards?.list() || Promise.resolve([]) });
 
   const createBudgetMutation = useMutation({ mutationFn: (data) => db.budgets.create(data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgets'] }); setBudgetDialog(false); setEditingBudget(null); } });
   const updateBudgetMutation = useMutation({ mutationFn: ({ id, data }) => db.budgets.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgets'] }); setBudgetDialog(false); setEditingBudget(null); } });
@@ -60,18 +56,12 @@ export default function Budget() {
   const updateExpenseMutation = useMutation({ mutationFn: ({ id, data }) => db.expenses.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['expenses'] }); setExpenseDialog(false); setEditingExpense(null); } });
   const deleteExpenseMutation = useMutation({ mutationFn: (id) => db.expenses.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['expenses'] }) });
 
-  const createCategoryMutation = useMutation({ mutationFn: (data) => db.budgetCategories.create(data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgetCategories'] }); setCategoryDialog(false); setEditingCategory(null); } });
-  const updateCategoryMutation = useMutation({ mutationFn: ({ id, data }) => db.budgetCategories.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['budgetCategories'] }); setCategoryDialog(false); setEditingCategory(null); } });
-  const deleteCategoryMutation = useMutation({ mutationFn: (id) => db.budgetCategories.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['budgetCategories'] }) });
-
   const createRateCardMutation = useMutation({ mutationFn: (data) => db.rateCards.create(data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['rateCards'] }); setRateCardDialog(false); setEditingRateCard(null); } });
   const updateRateCardMutation = useMutation({ mutationFn: ({ id, data }) => db.rateCards.update(id, data), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['rateCards'] }); setRateCardDialog(false); setEditingRateCard(null); } });
   const deleteRateCardMutation = useMutation({ mutationFn: (id) => db.rateCards.delete(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rateCards'] }) });
 
-  // 1. Core Calculations: Safely combine project base budgets and dedicated Budget entities
-  const projectBudgetsTotal = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
-  const dedicatedBudgetsTotal = budgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
-  const combinedTotalBudget = projectBudgetsTotal + dedicatedBudgetsTotal;
+  // 1. Core Calculations: Safely sum dedicated Budget entities
+  const combinedTotalBudget = budgets.reduce((sum, b) => sum + (b.total_amount || 0), 0);
 
   const paidExpenses = expenses.filter(e => e.status === 'paid');
   const totalSpent = paidExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
