@@ -41,7 +41,7 @@ This document tracks the progress of the features required for the Enterprise Pr
 
 ### 3. Financial & Budget Management
 
-- []  Expense Logging UI (File attachments, categorizations)
+- [ ]  Expense Logging UI (File attachments, categorizations)
 - [ ]  Cost-to-Complete (CTC) Forecasting
 - [ ]  Over-Budget Alerts (Notifications at 50%, 75%, 90%)
 - [ ]  Multi-Currency Support (Live exchange rates)
