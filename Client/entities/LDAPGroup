@@ -1,0 +1,60 @@
+{
+    "name": "LDAPGroup",
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Group name"
+      },
+      "cn": {
+        "type": "string",
+        "description": "Common Name (LDAP)"
+      },
+      "dn": {
+        "type": "string",
+        "description": "Distinguished Name (LDAP)"
+      },
+      "description": {
+        "type": "string"
+      },
+      "group_type": {
+        "type": "string",
+        "enum": [
+          "security",
+          "distribution",
+          "project",
+          "department"
+        ],
+        "default": "security"
+      },
+      "member_ids": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "User IDs in this group"
+      },
+      "permissions": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Permission strings"
+      },
+      "parent_group_id": {
+        "type": "string"
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "active",
+          "disabled"
+        ],
+        "default": "active"
+      }
+    },
+    "required": [
+      "name",
+      "cn"
+    ]
+  }

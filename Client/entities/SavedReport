@@ -1,0 +1,61 @@
+{
+  "name": "SavedReport",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": [
+        "project_progress",
+        "budget_utilization",
+        "team_performance",
+        "burn_down",
+        "budget_vs_actuals",
+        "task_completion",
+        "sprint_velocity",
+        "expense_breakdown",
+        "custom"
+      ],
+      "default": "project_progress"
+    },
+    "filters": {
+      "type": "object"
+    },
+    "schedule": {
+      "type": "string",
+      "enum": [
+        "none",
+        "daily",
+        "weekly",
+        "monthly"
+      ],
+      "default": "none"
+    },
+    "schedule_day": {
+      "type": "number"
+    },
+    "email_recipients": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "last_generated": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "report_type"
+  ]
+}

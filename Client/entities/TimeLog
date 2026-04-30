@@ -1,0 +1,33 @@
+{
+  "name": "TimeLog",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "hours": {
+      "type": "number"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "description": {
+      "type": "string"
+    },
+    "billable": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "hours",
+    "date"
+  ]
+}

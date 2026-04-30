@@ -1,0 +1,71 @@
+{
+  "name": "ResourceProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Linked user ID"
+    },
+    "title": {
+      "type": "string",
+      "description": "Job title / role"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "beginner",
+              "intermediate",
+              "advanced",
+              "expert"
+            ]
+          }
+        }
+      }
+    },
+    "availability_hours_per_week": {
+      "type": "number",
+      "default": 40
+    },
+    "availability_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "availability_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "department_id": {
+      "type": "string"
+    },
+    "cost_per_hour": {
+      "type": "number"
+    },
+    "time_zone": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "partially_available",
+        "fully_allocated",
+        "on_leave"
+      ],
+      "default": "available"
+    }
+  },
+  "required": [
+    "user_id"
+  ]
+}

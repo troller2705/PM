@@ -1,0 +1,27 @@
+{
+  "name": "TaskDependency",
+  "type": "object",
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "The task that depends on another"
+    },
+    "depends_on_task_id": {
+      "type": "string",
+      "description": "The task that must be completed first"
+    },
+    "dependency_type": {
+      "type": "string",
+      "enum": [
+        "finish_to_start",
+        "start_to_start",
+        "finish_to_finish"
+      ],
+      "default": "finish_to_start"
+    }
+  },
+  "required": [
+    "task_id",
+    "depends_on_task_id"
+  ]
+}

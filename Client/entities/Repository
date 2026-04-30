@@ -1,0 +1,60 @@
+{
+  "name": "Repository",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "integration_id": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    },
+    "clone_url": {
+      "type": "string"
+    },
+    "default_branch": {
+      "type": "string",
+      "default": "main"
+    },
+    "description": {
+      "type": "string"
+    },
+    "is_private": {
+      "type": "boolean",
+      "default": true
+    },
+    "language": {
+      "type": "string"
+    },
+    "last_push": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "stats": {
+      "type": "object",
+      "properties": {
+        "commits": {
+          "type": "number"
+        },
+        "branches": {
+          "type": "number"
+        },
+        "contributors": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "required": [
+    "name",
+    "integration_id"
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "name": "GitIntegration",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "github",
+        "gitlab",
+        "gitea"
+      ],
+      "default": "github"
+    },
+    "base_url": {
+      "type": "string",
+      "description": "Base URL for self-hosted instances"
+    },
+    "api_token": {
+      "type": "string"
+    },
+    "webhook_secret": {
+      "type": "string"
+    },
+    "organization": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "error"
+      ],
+      "default": "active"
+    },
+    "last_sync": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "auto_link_commits": {
+          "type": "boolean"
+        },
+        "auto_create_branches": {
+          "type": "boolean"
+        },
+        "sync_issues": {
+          "type": "boolean"
+        }
+      }
+    }
+  },
+  "required": [
+    "name",
+    "provider"
+  ]
+}
