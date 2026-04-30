@@ -1,5 +1,5 @@
-const API_BASE = '/api';
-const USE_MOCK_DATA = true; // Set to false when Express backend is ready
+const API_BASE = 'http://localhost:5001/api';
+const USE_MOCK_DATA = false; // Set to false when Express backend is ready
 
 // --- MOCK DATABASE SCHEMAS ALIGNED WITH GITHUB ENTITIES ---
 let MOCK_DB = {

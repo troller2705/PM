@@ -18,6 +18,12 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(true);
       setAuthError(null);
       
+      // Check for token first
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
       const currentUser = await db.auth.me();
       setUser(currentUser);
       setIsAuthenticated(true);
@@ -25,6 +31,7 @@ export const AuthProvider = ({ children }) => {
       console.error('User auth check failed:', error);
       setIsAuthenticated(false);
       setUser(null);
+      localStorage.removeItem('auth_token'); // Clean up invalid token
       setAuthError({
         type: 'auth_required',
         message: 'Authentication required'
@@ -34,15 +41,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const login = async (email, password) => {
+    try {
+      const { token, user: loggedInUser } = await db.auth.login({ email, password });
+      localStorage.setItem('auth_token', token);
+      setUser(loggedInUser);
+      setIsAuthenticated(true);
+      setAuthError(null);
+      // Let the component that called login handle navigation
+    } catch (error) {
+      logout(); // Ensure clean state on login failure
+      throw error; // Re-throw error to be caught by the login form
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('auth_token');
     setUser(null);
     setIsAuthenticated(false);
-    window.location.href = '/login'; // Redirect to your standard login route
-  };
-
-  const navigateToLogin = () => {
-    window.location.href = '/login';
+    // In a real app, you'd likely use react-router's navigate function
+    window.location.href = '/login'; 
   };
 
   return (
@@ -51,8 +69,8 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated, 
       isLoadingAuth,
       authError,
+      login, // Expose the login function
       logout,
-      navigateToLogin,
       checkUserAuth
     }}>
       {children}

@@ -52,7 +52,7 @@ const navigation = [
   { name: 'Admin', href: 'Admin', icon: Settings, adminOnly: true },
 ];
 
-export default function Layout({ children, currentPageName }) {
+export default function Layout({ children, currentPageName, hideSidebar }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user, logout } = useAuth(); // Use the user from AuthContext
@@ -142,6 +142,14 @@ export default function Layout({ children, currentPageName }) {
       </div>
     </div>
   );
+
+  if (hideSidebar) {
+    return (
+        <div className="min-h-screen bg-slate-50">
+          {children}
+        </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
