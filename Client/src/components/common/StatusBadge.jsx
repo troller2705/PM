@@ -9,10 +9,16 @@ const statusColors = {
   production: "bg-indigo-100 text-indigo-700",
   alpha: "bg-purple-100 text-purple-700",
   beta: "bg-violet-100 text-violet-700",
-  gold: "bg-amber-100 text-amber-700",
   live: "bg-emerald-100 text-emerald-700",
-  maintenance: "bg-orange-100 text-orange-700",
   archived: "bg-gray-100 text-gray-500",
+
+  // Project Types (Vibrant Gradients)
+  game: "bg-gradient-to-r from-violet-500 to-indigo-500 text-white border-transparent shadow-sm",
+  dlc: "bg-gradient-to-r from-fuchsia-500 to-pink-500 text-white border-transparent shadow-sm",
+  update: "bg-gradient-to-r from-emerald-400 to-teal-500 text-white border-transparent shadow-sm",
+  tool: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-transparent shadow-sm",
+  prototype: "bg-gradient-to-r from-amber-400 to-orange-500 text-white border-transparent shadow-sm",
+  other: "bg-gradient-to-r from-slate-400 to-gray-500 text-white border-transparent shadow-sm",
   
   // Task statuses
   backlog: "bg-slate-100 text-slate-600",

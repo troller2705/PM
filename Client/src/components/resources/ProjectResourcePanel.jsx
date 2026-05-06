@@ -139,7 +139,7 @@ export default function ProjectResourcePanel({ project, tasks, milestones }) {
     for (const f of generated) {
       await createMutation.mutateAsync({
         ...f,
-        project_id: project.id,
+        project_id: project._id || project.id,
         status: 'open',
         ai_generated: true,
         start_date: project.start_date || null,

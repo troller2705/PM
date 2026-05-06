@@ -63,7 +63,7 @@ export default function ProjectDetail() {
          estHours = Math.max(1, days) * 8; // 8 hours per day of span
       }
       return {
-        id: `m_${m.id}`,
+        id: `m_${m._id}`,
         title: `🚩 ${m.name}`,
         start_date: m.start_date || project?.start_date,
         due_date: m.due_date || project?.target_date,
@@ -88,9 +88,9 @@ export default function ProjectDetail() {
   if (projectLoading) return <div className="space-y-6 p-6"><Skeleton className="h-10 w-64" /><Skeleton className="h-96" /></div>;
   if (!project) return <EmptyState icon={Target} title="Project not found" description="The project you're looking for doesn't exist" />;
 
-  const getUserById = (id) => users.find(u => u.id === id);
+  const getUserById = (id) => users.find(u => u._id === id);
   const teamMembers = (project?.team_member_ids || []).map(id => getUserById(id)).filter(Boolean);
-  const lead = getUserById(project?.lead_id);
+  const lead = getUserById(project?.team_member_ids[0]);
 
   const taskStats = { total: tasks.length, done: tasks.filter(t => t.status === 'done').length, inProgress: tasks.filter(t => t.status === 'in_progress').length, blocked: tasks.filter(t => t.status === 'blocked').length };
   const progress = taskStats.total > 0 ? Math.round((taskStats.done / taskStats.total) * 100) : 0;

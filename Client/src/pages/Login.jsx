@@ -20,6 +20,7 @@ export default function Login() {
         try {
             await login(email, password);
             // The AuthProvider will handle navigation on successful login
+            window.location.href = "/";
         } catch (err) {
             setError(err.message || 'Failed to log in. Please check your credentials.');
         } finally {

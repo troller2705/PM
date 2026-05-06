@@ -50,8 +50,10 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
       // Let the component that called login handle navigation
     } catch (error) {
-      logout(); // Ensure clean state on login failure
-      throw error; // Re-throw error to be caught by the login form
+      localStorage.removeItem('auth_token');
+      setUser(null);
+      setIsAuthenticated(false);
+      throw error;
     }
   };
 

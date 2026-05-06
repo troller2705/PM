@@ -1,85 +1,87 @@
 import { Toaster } from "./components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from './lib/query-client'
-import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import UserNotRegisteredError from './components/UserNotRegisteredError';
 
-const { Pages, Layout, mainPage } = pagesConfig;
-const mainPageKey = mainPage ?? Object.keys(Pages)[0];
-const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+// Layouts
+import RootLayout from './layouts/RootLayout';
+import ProjectLayout from './layouts/ProjectLayout';
+import AdminLayout from './layouts/AdminLayout';
 
-const LayoutWrapper = ({ children, currentPageName, hideSidebar }) => Layout ?
-    <Layout currentPageName={currentPageName} hideSidebar={hideSidebar}>
-      {children}
-    </Layout>
-    : <>{children}</>;
+// Pages
+import Login from './pages/Login';
+import ProjectList from './pages/Projects';
+import Dashboard from './pages/Dashboard';
+import Tasks from './pages/Tasks';
+import Budget from './pages/Budget';
+import AccessControl from './pages/AccessControl';
+import Settings from './pages/Settings';
+import Company from "./pages/Company.jsx";
+import Admin from "./pages/Admin.jsx";
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
+    const { isLoadingAuth, isAuthenticated, authError } = useAuth();
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  // Handle authentication errors
-  if (authError && !window.location.pathname.startsWith('/login')) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      window.location.href = '/login';
-      return null;
+    if (isLoadingAuth) {
+        return (
+            <div className="fixed inset-0 flex items-center justify-center bg-slate-50">
+                <div className="w-8 h-8 border-4 border-slate-200 border-t-violet-600 rounded-full animate-spin"></div>
+            </div>
+        );
     }
-  }
 
-  // Render the main app
-  return (
-    <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
-          <Route
-              key={path}
-              path={`/${path}`}
-              element={
-                <LayoutWrapper
-                    currentPageName={path}
-                    hideSidebar={path.toLowerCase() === 'login'} // Pass a boolean flag
-                >
-                  <Page />
-                </LayoutWrapper>
-              }
-          />
-      ))}
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
-  );
+    // Allow access to login page even if auth fails
+    if (authError && !window.location.pathname.startsWith('/login')) {
+        if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
+        window.location.href = '/login';
+        return null;
+    }
+
+    return (
+        <Routes>
+            {/* Public Route */}
+            <Route path="/login" element={<Login />} />
+
+            {/* 1. Global Landing Space (No Sidebar) */}
+            <Route path="/" element={<RootLayout />}>
+                <Route index element={<ProjectList />} />
+                <Route path="settings" element={<Settings />} />
+            </Route>
+
+            {/* 2. Project Workspace (Project Sidebar) */}
+            {/* The :projectId parameter allows your pages to fetch specific project data */}
+            <Route path="/project/:projectId" element={<ProjectLayout />}>
+                <Route index element={<Dashboard />} /> {/* Project Overview */}
+                <Route path="tasks" element={<Tasks />} />
+                <Route path="budget" element={<Budget />} />
+                {/* Add Git, Resources, etc. here */}
+            </Route>
+
+            {/* 3. Admin Workspace (Admin Sidebar) */}
+            <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="/admin/company" replace />} />
+                <Route path="company" element={<Company />} />
+                <Route path="access-control" element={<AccessControl />} />
+                <Route path="admin" element={<Admin />} />
+            </Route>
+
+            <Route path="*" element={<PageNotFound />} />
+        </Routes>
+    );
 };
 
-
-function App() {
-
-  return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
-  )
+export default function App() {
+    return (
+        <AuthProvider>
+            <QueryClientProvider client={queryClientInstance}>
+                <Router>
+                    <AuthenticatedApp />
+                </Router>
+                <Toaster />
+            </QueryClientProvider>
+        </AuthProvider>
+    )
 }
-
-export default App

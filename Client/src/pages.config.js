@@ -12,10 +12,8 @@ import ScenarioPlanner from './pages/ScenarioPlanner';
 import Settings from './pages/Settings';
 import TaskDetail from './pages/TaskDetail';
 import Tasks from './pages/Tasks';
-import Team from './pages/Team';
 import Templates from './pages/Templates';
 import Workflows from './pages/Workflows';
-import __Layout from './Layout.jsx';
 import Login from './pages/Login';
 
 
@@ -34,7 +32,6 @@ export const PAGES = {
     "Settings": Settings,
     "TaskDetail": TaskDetail,
     "Tasks": Tasks,
-    "Team": Team,
     "Templates": Templates,
     "Workflows": Workflows,
     "Login": Login,
@@ -43,5 +40,4 @@ export const PAGES = {
 export const pagesConfig = {
     mainPage: "Dashboard",
     Pages: PAGES,
-    Layout: __Layout,
 };

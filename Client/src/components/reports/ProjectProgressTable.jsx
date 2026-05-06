@@ -51,7 +51,7 @@ export default function ProjectProgressTable({ projects, tasks, users }) {
                   <td colSpan={8} className="text-center py-12 text-slate-400">No projects found</td>
                 </tr>
               ) : projectData.map(({ project, ptasks, done, blocked, progress, lead, daysLeft, isOverdue, isAtRisk }) => (
-                <tr key={project.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={project._id || project.id} className="hover:bg-slate-50 transition-colors">
                   <td className="p-4">
                     <p className="font-medium text-slate-900">{project.name}</p>
                     <p className="text-xs text-slate-400">{project.code}</p>

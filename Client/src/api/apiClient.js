@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5001/api';
+const API_BASE = 'http://10.25.25.135:5001/api';
 const USE_MOCK_DATA = false; // Set to false when Express backend is ready
 
 // --- MOCK DATABASE SCHEMAS ALIGNED WITH GITHUB ENTITIES ---
@@ -184,6 +184,7 @@ export const db = {
   auth: {
     me: () => fetchAPI('/auth/me'),
     login: (credentials) => fetchAPI('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
+    register: (userData) => fetchAPI('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
   },
   users: createEndpoints('/users'),
   projects: createEndpoints('/projects'),

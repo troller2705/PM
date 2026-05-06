@@ -8,7 +8,7 @@ export default function StatCard({ title, value, subtitle, icon: Icon, trend, tr
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <p className="text-sm font-medium text-slate-500">{title}</p>
-          <p className="text-3xl font-semibold text-slate-900 tracking-tight">{value}</p>
+          <div className="text-3xl font-semibold text-slate-900 tracking-tight">{value}</div>
           {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
           {trend && (
             <p className={cn("text-sm font-medium", trendUp ? "text-emerald-600" : "text-red-500")}>

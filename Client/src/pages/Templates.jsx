@@ -93,7 +93,7 @@ export default function Templates() {
           task_type: taskTpl.task_type || 'task',
           estimated_hours: taskTpl.estimated_hours || null,
           labels: taskTpl.labels || [],
-          project_id: project.id,
+          project_id: project._id || project.id,
         });
         idMap[taskTpl.ref_id] = newTask.id;
       }

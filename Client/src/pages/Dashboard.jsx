@@ -54,18 +54,18 @@ export default function Dashboard() {
     const profileMap = new Map(resourceProfiles.map(p => [p.user_id, p]));
 
     return projects.map(project => {
-      const projectBudgets = budgets.filter(b => b.project_id === project.id);
+      const projectBudgets = budgets.filter(b => b.project_id === project._id);
       // Only rely on actual budget entities, ignore project.budget
       const totalBudget = projectBudgets.reduce((sum, b) => sum + b.total_amount, 0);
 
-      const projectTimeLogs = timeLogs.filter(tl => tl.project_id === project.id);
+      const projectTimeLogs = timeLogs.filter(tl => tl.project_id === project._id);
       const laborCost = projectTimeLogs.reduce((sum, tl) => {
         // Use the snapshotted rate if available, otherwise fallback to their current profile rate
         const rate = tl.applied_hourly_rate ?? profileMap.get(tl.user_id)?.cost_per_hour ?? 0;
         return sum + (tl.hours * rate);
       }, 0);
 
-      const projectExpenses = expenses.filter(e => e.project_id === project.id && e.status === 'paid');
+      const projectExpenses = expenses.filter(e => e.project_id === project._id && e.status === 'paid');
       const expenseCost = projectExpenses.reduce((sum, e) => sum + e.amount, 0);
 
       const totalSpend = laborCost + expenseCost;
@@ -73,7 +73,7 @@ export default function Dashboard() {
       const burnPercent = totalBudget > 0 ? Math.round((totalSpend / totalBudget) * 100) : 0;
 
       return {
-        id: project.id,
+        id: project._id || project.id,
         name: project.name,
         totalBudget,
         laborCost,
