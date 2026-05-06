@@ -25,9 +25,9 @@ export default function ProjectLayout() {
     const projectNav = [
         { name: 'Overview', href: `/project/${projectId}`, icon: LayoutDashboard },
         { name: 'Tasks & Boards', href: `/project/${projectId}/tasks`, icon: ListTodo },
-        { name: 'Git & Commits', href: `/project/${projectId}/git`, icon: GitBranch },
+        // { name: 'Git & Commits', href: `/project/${projectId}/git`, icon: GitBranch },
         { name: 'Budget & Spend', href: `/project/${projectId}/budget`, icon: DollarSign },
-        { name: 'Resources', href: `/project/${projectId}/resources`, icon: CalendarRange },
+        // { name: 'Resources', href: `/project/${projectId}/resources`, icon: CalendarRange },
     ];
 
     return (
@@ -79,7 +79,7 @@ export default function ProjectLayout() {
 
             {/* Main Workspace Content */}
             <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-                <main className="flex-1 p-8 w-full max-w-7xl mx-auto">
+                <main className="flex-1 p-8 w-full max-w-screen-2xl mx-auto">
                     {/* Outlet is where the child route (Tasks, Budget, etc) gets rendered */}
                     <Outlet />
                 </main>
