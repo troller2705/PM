@@ -30,7 +30,7 @@ export default function AdminLayout() {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-50 flex">
+        <div className="min-h-screen bg-slate-50 flex" style={{maxWidth: "100dvw"}}>
             {/* Admin Sidebar */}
             <aside className="w-64 fixed left-0 top-0 bottom-0 flex flex-col bg-slate-950 border-r border-slate-800 hidden lg:flex text-slate-300">
 
@@ -71,7 +71,7 @@ export default function AdminLayout() {
 
             {/* Main Workspace Content */}
             <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
-                <main className="flex-1 p-8 w-full max-w-screen-2xl mx-auto">
+                <main className="flex-1 p-8 w-full mx-auto" style={{maxWidth: '80dvw'}}>
                     <Outlet />
                 </main>
             </div>
