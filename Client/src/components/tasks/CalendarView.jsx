@@ -15,6 +15,12 @@ const PRIORITY_DOT = {
   low: 'bg-slate-400',
 };
 
+const formatLocalDate = (isoString, formatStr = 'MMM d, yyyy') => {
+  if (!isoString) return '-';
+  // Split the string at 'T' to grab just the YYYY-MM-DD, then force it to local noon
+  return format(new Date(isoString.split('T')[0] + 'T12:00:00'), formatStr);
+};
+
 export default function CalendarView({ tasks }) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -31,7 +37,7 @@ export default function CalendarView({ tasks }) {
   }
 
   const getTasksForDay = (d) =>
-    tasks.filter(t => t.due_date && isSameDay(new Date(t.due_date), d));
+    tasks.filter(t => t.due_date && isSameDay(formatLocalDate(t.due_date), d));
 
   return (
     <div className="bg-white rounded-xl border shadow-sm overflow-hidden">

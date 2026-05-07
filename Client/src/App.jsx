@@ -57,7 +57,7 @@ const AuthenticatedApp = () => {
                 <Route index element={<Dashboard />} /> {/* Project Overview */}
                 <Route path="tasks" element={<Tasks />} />
                 <Route path="budget" element={<Budget />} />
-                {/* Add Git, Resources, etc. here */}
+                {/* TODO: Add Git, Resources, etc. here */}
             </Route>
 
             {/* 3. Admin Workspace (Admin Sidebar) */}

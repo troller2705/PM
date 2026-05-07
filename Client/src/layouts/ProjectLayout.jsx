@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, Outlet, useParams, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { db } from '../api/apiClient';
 import { useAuth } from '../lib/AuthContext';
+import { usePermissions } from '../components/common/usePermissions'; // <-- ADDED IMPORT
 import Avatar from '../components/common/Avatar';
 import { Button } from "../components/ui/button";
 import { cn } from "../lib/utils";
@@ -12,13 +13,17 @@ import {
 } from 'lucide-react';
 
 export default function ProjectLayout() {
-    const { projectId } = useParams(); // Grabs the ID from /project/123/tasks
+    const { projectId } = useParams();
     const location = useLocation();
     const { user } = useAuth();
 
+    // --- GRAB PERMISSIONS ---
+    const { can } = usePermissions(user);
+    const canViewFinancials = can('finance.view');
+
     const { data: project, isLoading } = useQuery({
         queryKey: ['project', projectId],
-        queryFn: () => db.projects.get(projectId), // Assumes your apiClient has a .get() method
+        queryFn: () => db.projects.get(projectId),
     });
 
     // Navigation scoped ONLY to this project
@@ -26,9 +31,12 @@ export default function ProjectLayout() {
         { name: 'Overview', href: `/project/${projectId}`, icon: LayoutDashboard },
         { name: 'Tasks & Boards', href: `/project/${projectId}/tasks`, icon: ListTodo },
         // { name: 'Git & Commits', href: `/project/${projectId}/git`, icon: GitBranch },
-        { name: 'Budget & Spend', href: `/project/${projectId}/budget`, icon: DollarSign },
+
+        // Conditionally include Budget link, filtering out false values
+        canViewFinancials && { name: 'Budget & Spend', href: `/project/${projectId}/budget`, icon: DollarSign },
+
         // { name: 'Resources', href: `/project/${projectId}/resources`, icon: CalendarRange },
-    ];
+    ].filter(Boolean); // <-- Removes any "false" items from the array
 
     return (
         <div className="min-h-screen bg-slate-50 flex" style={{maxWidth: "100dvw"}}>
@@ -80,7 +88,6 @@ export default function ProjectLayout() {
             {/* Main Workspace Content */}
             <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
                 <main className="flex-1 p-8 w-full mx-auto" style={{maxWidth: '80dvw'}}>
-                    {/* Outlet is where the child route (Tasks, Budget, etc) gets rendered */}
                     <Outlet />
                 </main>
             </div>

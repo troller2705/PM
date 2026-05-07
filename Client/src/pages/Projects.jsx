@@ -52,6 +52,12 @@ const PROJECT_TYPES = [
   {name: 'other', style: 'bg-gradient-to-r from-slate-400 to-gray-500'}        // Neutral, clean, out-of-the-way
 ];
 
+const formatLocalDate = (isoString, formatStr = 'MMM d, yyyy') => {
+  if (!isoString) return '-';
+  // Split the string at 'T' to grab just the YYYY-MM-DD, then force it to local noon
+  return format(new Date(isoString.split('T')[0] + 'T12:00:00'), formatStr);
+};
+
 export default function Projects() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -190,7 +196,7 @@ export default function Projects() {
                           <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
                             <div className="flex items-center gap-1 text-sm text-slate-500">
                               <Calendar className="h-4 w-4" />
-                              {project.target_date ? format(new Date(project.target_date), 'MMM d') : 'No date'}
+                              {formatLocalDate(project.target_date, 'MMM d')}
                             </div>
                             {project.lead_id && <Avatar name={getUserById(project.lead_id)?.full_name} size="sm" />}
                           </div>
@@ -251,8 +257,8 @@ export default function Projects() {
                                   </div>
                               ) : <span className="text-xs text-slate-400">No budget set</span>}
                             </td>
-                            <td className="px-4 py-3 text-slate-600">{project.start_date ? format(new Date(project.start_date), 'MMM d, yyyy') : '-'}</td>
-                            <td className="px-4 py-3 text-slate-600">{project.target_date ? format(new Date(project.target_date), 'MMM d, yyyy') : '-'}</td>
+                            <td className="px-4 py-3 text-slate-600">{formatLocalDate(project.start_date)}</td>
+                            <td className="px-4 py-3 text-slate-600">{formatLocalDate(project.target_date)}</td>
                             <td className="px-4 py-3 text-right"><ProjectActions project={project} setEditingProject={setEditingProject} setDialogOpen={setDialogOpen} deleteMutation={deleteMutation} /></td>
                           </tr>
                       );
@@ -265,7 +271,8 @@ export default function Projects() {
         )}
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-lg">
+          {/* Added aria-describedby to fix Radix UI console warnings */}
+          <DialogContent className="max-w-lg" aria-describedby={undefined}>
             <DialogHeader><DialogTitle>{editingProject ? 'Edit Project' : 'Create New Project'}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -290,8 +297,16 @@ export default function Projects() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2"><Label>Start Date</Label><Input name="start_date" type="date" defaultValue={editingProject?.start_date} /></div>
-                <div className="space-y-2"><Label>Target Date</Label><Input name="target_date" type="date" defaultValue={editingProject?.target_date} /></div>
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  {/* Fixed Date Format */}
+                  <Input name="start_date" type="date" defaultValue={editingProject?.start_date ? editingProject.start_date.split('T')[0] : ''} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Target Date</Label>
+                  {/* Fixed Date Format */}
+                  <Input name="target_date" type="date" defaultValue={editingProject?.target_date ? editingProject.target_date.split('T')[0] : ''} />
+                </div>
               </div>
               <DialogFooter><Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button><Button type="submit">Save</Button></DialogFooter>
             </form>
